@@ -1,0 +1,298 @@
+PRD: Layout da Sala de Dispositivos
+
+
+
+
+PRD: Layout da Sala de Dispositivos
+  ​Nov 25, 2026 · ​@Kenni Maki
+
+
+
+Resumo
+Uma página HTML única mostra o mapa da sala de dispositivos e controla a calibração de
+cada equipamento, relógio comparador e P/NP. A versão 1 está pronta e funciona em um
+computador, sem internet e sem instalação. Falta validar o uso na sala, a impressão e o
+backup, e decidir se o mapa será compartilhado entre computadores.
+
+
+Problema e objetivos
+Quem usa a sala precisa saber onde está cada equipamento, o que há dentro dele e
+quando a calibração vence. O produto reúne essas três respostas em um mapa que a
+própria equipe edita. O impacto atual do problema (tempo de procura, calibrações
+perdidas) ainda não foi medido.
+
+   1. Mapear todos os equipamentos da sala no lugar em que ficam.
+   2. Registrar o relógio comparador e o P/NP que acompanham cada equipamento.
+   3. Calcular o vencimento da calibração e avisar antes do prazo.
+   4. Ser simples: cadastrar e editar sem treinamento, com poucos cliques.
+
+
+Fora da versão 1
+       Uso simultâneo por várias pessoas, login e permissões.
+       Certificados de calibração, histórico de calibrações e aviso por e-mail.
+       Paredes, portas e móveis no desenho; medidas reais da sala em metros.
+       Lista de equipamentos e exportação para Excel. Existem na versão completa anterior,
+       que foi substituída por ser difícil de usar.
+
+
+Usuários e histórias de uso
+Há um uso confirmado, o de quem cuida da sala e mantém o cadastro. Os outros dois
+perfis são suposições a confirmar.
+
+
+  Perfil                              Quer                            Para
+
+  Responsável pela sala               Desenhar o mapa e editar cada   Manter o cadastro igual à
+                                      equipamento                     sala real
+
+
+
+
+                                                                                              Page 1 of 6
+PRD: Layout da Sala de Dispositivos
+
+
+
+
+  Perfil                                    Quer                                Para
+
+  Responsável pela sala                     Informar a calibração e ver o       Enviar para calibrar antes do
+                                            vencimento calculado                prazo
+
+  Quem usa os dispositivos                  Procurar por código ou              Achar o equipamento e
+  (suposição)                               descrição                           saber se está em dia
+
+  Qualidade ou auditoria                    Ver o que está vencido              Comprovar o controle das
+  (suposição)                                                                   calibrações
+
+
+
+
+Requisitos funcionais
+Os 14 requisitos abaixo já estão na versão 1.
+
+
+  ID             Área                 O sistema deve
+
+  RF01           Mapa                 Criar um equipamento ao clicar em um espaço
+                                      vazio da grade
+
+  RF02           Mapa                 Mover arrastando; dois equipamentos do mesmo
+                                      tamanho trocam de lugar
+
+  RF03           Mapa                 Aumentar ou diminuir o equipamento pelo canto,
+                                      sem sobrepor outro
+
+  RF04           Mapa                 Aumentar ou diminuir a sala pela borda, até 60 × 60
+                                      espaços; não remover linha ou coluna ocupada
+
+  RF05           Mapa                 Mostrar código, descrição, itens e aviso de
+                                      vencimento conforme o espaço disponível
+
+  RF06           Painel               Abrir um painel flutuante ao lado do equipamento,
+                                      que pode ser arrastado; fechar com Enter, Esc, × ou
+                                      clique fora
+
+  RF07           Painel               Editar Código Equipamento, descrição, anotação e
+                                      cor (6 opções)
+
+  RF08           Painel               Adicionar e remover vários relógios comparadores
+                                      (código, resolução) e P/NP (código, medida)
+
+  RF09           Calibração           Registrar data e validade de 1, 2 ou 3 anos,
+                                      separadas por equipamento, relógio e P/NP
+
+  RF10           Calibração           Calcular o vencimento na hora e avisar no painel e
+                                      no mapa
+
+
+
+
+                                                                                                        Page 2 of 6
+PRD: Layout da Sala de Dispositivos
+
+
+
+
+  ID             Área                 O sistema deve
+
+  RF11           Busca                Procurar por código, descrição, anotação, item,
+                                      data de vencimento ou "vencido"
+
+  RF12           Segurança            Desfazer alterações, até 100 passos, inclusive
+                                      apagar
+
+  RF13           Dados                Salvar sozinho no navegador; salvar e abrir cópia
+                                      em arquivo .json
+
+  RF14           Impressão            Imprimir o mapa em A4 paisagem
+
+
+
+Propostas para depois
+Nenhuma está aprovada. A ordem é a sugestão de prioridade.
+
+
+  ID            Proposta                                           Por quê
+
+  RF15          Lista de vencimentos, do mais urgente              Planejar o envio para calibração sem abrir
+                ao menos                                           um por um
+
+  RF16          Exportar a lista para Excel                        Compartilhar com qualidade e
+                                                                   fornecedores
+
+  RF17          Lembrar de salvar cópia de segurança               Reduzir o risco de perder o cadastro
+
+  RF18          Mapa compartilhado entre                           Todos verem a mesma informação
+                computadores
+
+  RF19          Histórico de calibrações por                       Guardar as datas anteriores, hoje
+                equipamento                                        substituídas
+
+
+
+
+Regras de calibração
+O vencimento é a data de calibração mais 1, 2 ou 3 anos, no mesmo dia e mês. Exemplo:
+calibração em 10/05/2026 com 2 anos vence em 10/05/2028.
+
+       A validade começa em 1 ano.
+       Calibração em 29/02 vence em 28/02 quando o ano final não é bissexto.
+       No dia do vencimento o item ainda não está vencido; passa a vencido no dia seguinte.
+       Sem data de calibração, não há vencimento nem aviso.
+       Com mais de um aviso no mesmo equipamento, o mapa mostra o mais urgente e, ao
+       passar o mouse, todos.
+
+
+
+
+                                                                                                          Page 3 of 6
+PRD: Layout da Sala de Dispositivos
+
+
+
+
+  Situação                Condição                    No painel            No mapa
+
+  Em dia                  Faltam mais de 30 dias      Em dia               Sem aviso
+
+  A vencer                Faltam de 1 a 30 dias       Faltam N dias        Vence dd/mm, em laranja
+
+  Vence hoje              Data de hoje                Vence hoje           Vence hoje, em laranja
+
+  Vencido                 Data já passou              Vencido há N dias    Vencido, em vermelho
+
+
+A cor do equipamento é escolhida pelo usuário e não muda com o vencimento.
+
+
+Dados e requisitos técnicos
+Cada computador guarda o próprio mapa, no navegador. Limpar os dados do navegador
+apaga o cadastro; o arquivo .json é o único backup.
+
+
+  Registro                            Campos
+
+  Sala                                Nome, colunas, linhas
+
+  Equipamento                         Código, descrição, data de calibração, validade,
+                                      anotação, cor, posição, tamanho
+
+  Relógio comparador                  Código, resolução, data de calibração, validade
+
+  P/NP                                Código, medida, data de calibração, validade
+
+
+       Plataforma: um arquivo HTML, aberto com dois cliques no Chrome ou Edge.
+       Rede: nenhuma conexão; os dados não saem do computador.
+       Tela: ajusta-se à janela; em celular o painel abre na parte de baixo.
+       Compatibilidade: cadastros da versão completa são convertidos ao abrir. Datas de
+       próxima calibração vão para a anotação, porque a data de calibração original não
+       existia.
+       Arquivo inválido: recusado com mensagem, sem alterar o mapa atual.
+
+
+Critérios de aceite
+Os sete primeiros foram testados no navegador em 24/11/2026. Os quatro últimos ainda
+não.
+
+       Criar, mover, trocar e redimensionar um equipamento
+       Apagar e desfazer, recuperando o equipamento e os itens
+
+
+
+                                                                                                     Page 4 of 6
+PRD: Layout da Sala de Dispositivos
+
+
+
+
+       Cadastrar relógio e P/NP e encontrá-los pela busca
+       Calcular vencimento de 1, 2 e 3 anos, incluindo 29/02
+       Manter validades separadas no equipamento, no relógio e no P/NP
+       Recuperar o cadastro gravado no navegador e abrir dados de versões anteriores
+       Usar em tela do tamanho de um celular
+       Imprimir o mapa em papel A4, legível
+       Salvar a cópia e abri-la em outro computador, sem perda
+       Criar e mover equipamentos com o toque em um aparelho real
+       Cadastrar a sala inteira e conferir com o local
+
+
+Como medir o sucesso
+Metas sugeridas, a confirmar depois do primeiro mês de uso:
+
+       100% dos equipamentos da sala no mapa.
+       100% dos itens calibráveis com data de calibração preenchida.
+       Nenhum item em uso com calibração vencida.
+       Localizar um equipamento pela busca em menos de 10 segundos.
+
+
+Riscos e decisões em aberto
+O maior risco é perder o cadastro, porque ele existe em um só navegador.
+
+
+  Risco                               Consequência                Resposta
+
+  Dados do navegador                  Perda do mapa inteiro       Salvar cópia com frequência;
+  apagados                                                        RF17
+
+  Mapas diferentes em cada            Informação divergente       Um computador oficial até
+  computador                                                      decidir RF18
+
+  Qualquer pessoa edita               Alteração sem registro de   Definir um responsável pelo
+                                      autor                       cadastro
+
+  Nova calibração substitui a         Sem histórico para          Guardar certificados à parte;
+  anterior                            auditoria                   RF19
+
+
+
+Perguntas para decidir
+       Quantos equipamentos a sala tem e quem cuidará do cadastro?
+       O mapa precisa ser visto em mais de um computador?
+
+
+
+
+                                                                                           Page 5 of 6
+PRD: Layout da Sala de Dispositivos
+
+
+
+
+       A validade pode ser em meses, ou só 1, 2 e 3 anos bastam?
+       Trinta dias de aviso são suficientes para enviar à calibração?
+       O controle precisa atender a uma norma ou auditoria específica?
+       Equipamento com calibração vencida deve ser bloqueado para uso?
+
+
+Próximos passos
+   1. Cadastrar a sala real e anotar o que atrapalhar.
+   2. Concluir os quatro testes pendentes.
+   3. Responder às perguntas acima e aprovar, ou não, RF15 a RF19.
+
+
+
+
+                                                                         Page 6 of 6
+
