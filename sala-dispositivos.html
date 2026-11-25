@@ -216,6 +216,10 @@ body.sheet-open #map{padding-bottom:75vh}
 #panel.sheet{left:0!important;right:0;bottom:0;top:auto!important;width:100%;max-width:none;max-height:72vh;border-radius:16px 16px 0 0;
   padding-bottom:env(safe-area-inset-bottom)}
 #panel.sheet.teclado{border-radius:12px 12px 0 0;padding-bottom:0}
+/* Digitando no celular: painel em tela cheia e espaço livre no fim do tamanho de um teclado,
+   para poder deslizar até o último campo ficar visível acima do teclado. */
+#panel.sheet.digitando{max-height:calc(100% - env(safe-area-inset-top) - 8px)}
+#panel.sheet.digitando #pbody{padding-bottom:calc(var(--tecl, 45vh) + 24px)}
 #panel.sheet #phead{cursor:default}
 #panel.sheet #phead::before{content:"";position:absolute;left:50%;top:4px;width:40px;height:4px;margin-left:-20px;border-radius:2px;background:#d0d5ce}
 
@@ -950,7 +954,7 @@ function closePanel() {
   if (!openId) return;
   const ae = document.activeElement; if (ae && panel.contains(ae)) ae.blur();
   fecharSugestoes();
-  const id = openId; openId = null; lastKey = null; panel.hidden = true; ajustarTeclado();
+  const id = openId; openId = null; lastKey = null; panel.hidden = true; panel.classList.remove('digitando'); ajustarTeclado();
   document.body.classList.remove('sheet-open');
   if (novo && novo.id === id) {
     // Equipamento recém-criado e deixado em branco: a criação é cancelada.
@@ -1191,6 +1195,7 @@ function ajustarTeclado() {
   const alto = document.documentElement.clientHeight;
   const teclado = vv && sheet ? alto - vv.height > 120 : false;
   panel.classList.toggle('teclado', teclado);
+  if (vv && sheet) panel.style.setProperty('--tecl', Math.max(alto - vv.height - vv.offsetTop, 0) > 120 ? Math.round(alto - vv.height - vv.offsetTop) + 'px' : '45vh');
   if (!teclado) { panel.style.removeProperty('top'); panel.style.removeProperty('max-height'); }
   else {
     panel.style.setProperty('max-height', Math.round(vv.height - 8) + 'px', 'important');
@@ -1209,7 +1214,15 @@ if (window.visualViewport) {
   visualViewport.addEventListener('resize', f); visualViewport.addEventListener('scroll', f);
 }
 // O teclado leva um instante para abrir; ajusta logo e de novo depois da animação.
-pbody.addEventListener('focusin', () => { if (!panel.classList.contains('sheet')) return; setTimeout(ajustarTeclado, 50); setTimeout(ajustarTeclado, 350); });
+const editavel = el => el && /^(INPUT|TEXTAREA)$/.test(el.tagName) && !/^(checkbox|date|button)$/.test(el.type);
+pbody.addEventListener('focusin', e => {
+  if (!panel.classList.contains('sheet')) return;
+  if (editavel(e.target)) panel.classList.add('digitando');
+  setTimeout(ajustarTeclado, 50); setTimeout(ajustarTeclado, 350); setTimeout(ajustarTeclado, 700);
+});
+pbody.addEventListener('focusout', () => setTimeout(() => {
+  if (!editavel(document.activeElement) || !pbody.contains(document.activeElement)) { panel.classList.remove('digitando'); ajustarTeclado(); }
+}, 150));
 
 /* ====== Sugestões da memória no campo Descrição do item ====== */
 const sugest = $('#sugest');
