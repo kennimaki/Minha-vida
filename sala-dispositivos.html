@@ -110,12 +110,16 @@ body.sheet-open #map{padding-bottom:75vh}
   background-image:linear-gradient(to right,var(--grid) 1px,transparent 1px),linear-gradient(to bottom,var(--grid) 1px,transparent 1px);
   box-shadow:0 1px 2px rgba(0,0,0,.05);-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
 #eqs{position:absolute;inset:0}
-.eq{position:absolute;border-radius:6px;border:1.5px solid var(--bd);background:var(--fill);padding:3px 6px;overflow:hidden;cursor:grab;
+.eq{position:absolute;border-radius:7px;border:2px solid var(--bd);background:var(--fill);padding:0;overflow:hidden;cursor:grab;
   touch-action:pan-x pan-y;font-size:12px;line-height:15px;transition:opacity .12s,box-shadow .12s}
 .eq:hover{box-shadow:0 2px 8px rgba(0,0,0,.12)}
 .eq .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.eq .code{font-weight:650;font-size:12.5px;padding-right:8px}
-.eq .code .none{font-weight:400;color:var(--muted);font-style:italic}
+.eq .band{background:var(--band);color:var(--bink);height:var(--bh);line-height:var(--bh);padding:0 5px;font-weight:800;font-size:var(--bfs,13.5px);letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eq.mini .band{height:100%;line-height:1;white-space:normal;overflow-wrap:anywhere;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 1px;font-size:min(var(--bfs,13px),11px)}
+.eq.mini .corpo{display:none}
+.eq .band .none{font-weight:500;font-style:italic;opacity:.8}
+.eq .corpo{padding:2px 6px}
+.eq .w.soon,.eq .w.today{background:#fff0b3;color:#6b5200}
 .eq .desc{color:#36403b}
 .eq .it{color:#4f5a54;font-size:11.5px}
 .eq .more{color:var(--muted);font-size:11px}
@@ -146,6 +150,11 @@ body.sheet-open #map{padding-bottom:75vh}
 .edge.b::after{top:4px;left:50%;height:4px;width:36px;margin-left:-18px}
 .edge.c::after{inset:4px;border-radius:50%}
 .edge:hover::after,.edge.on::after{background:var(--acc)}
+.legenda{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;font-size:12px;color:var(--muted);margin-top:44px}
+.legenda span{display:flex;align-items:center;gap:6px}
+.legenda i{width:14px;height:14px;border-radius:4px;border:2px solid}
+.lg-ok{background:#e2f3e7;border-color:#3f9b5f!important} .lg-soon{background:#fff7d6;border-color:#d9a900!important}
+.lg-late{background:#fde6e6;border-color:#d64545!important} .lg-none{background:#f3f4f2;border-color:#b3bab4!important}
 #sizeTag{position:absolute;right:0;bottom:-38px;background:var(--ink);color:#fff;font-size:12px;padding:2px 8px;border-radius:4px;display:none;white-space:nowrap}
 .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);pointer-events:none;padding:16px;font-size:15px}
 
@@ -278,7 +287,18 @@ body.sheet-open #map{padding-bottom:75vh}
 #plist .late{color:#c22727;font-weight:700} #plist .soon,#plist .today{color:#b45f00;font-weight:700} #plist .miss{color:#b45f00} #plist .ok{color:#2e7d4f}
 #plist thead{display:table-header-group} #plist tr{break-inside:avoid}
 
-@media (pointer:coarse){.eq .rz{width:min(24px,40%);height:min(24px,40%)}.edge.r{width:20px;right:-22px}.edge.b{height:20px;bottom:-22px}.edge.c{width:26px;height:26px;right:-26px;bottom:-26px}}
+@media (pointer:coarse){
+  .eq .rz{width:min(24px,40%);height:min(24px,40%)}
+  /* Alças largas para o dedo, com uma barra visível no meio */
+  .edge.r{width:40px;right:-44px}
+  .edge.b{height:40px;bottom:-44px}
+  .edge.c{width:44px;height:44px;right:-46px;bottom:-46px}
+  .edge.r::after{left:16px;width:8px;height:64px;margin-top:-32px;background:#a9b3aa}
+  .edge.b::after{top:16px;height:8px;width:64px;margin-left:-32px;background:#a9b3aa}
+  .edge.c::after{inset:10px;background:#a9b3aa}
+  #sizeTag{bottom:-80px;font-size:14px;padding:4px 10px}
+  .legenda{margin-top:72px}
+}
 @media (max-width:700px){
   html,body{height:auto;overflow-x:hidden;overflow-y:visible}
   body{display:block;min-height:100%}
@@ -292,7 +312,7 @@ body.sheet-open #map{padding-bottom:75vh}
   #panel.sheet{max-height:62vh}
   .searchbox{flex:1 1 100%} #q{width:100%}
   input,select,textarea{font-size:16px!important}
-  #map{padding:16px 30px 30px 16px}
+  #map{padding:16px 60px 40px 16px}
   .bar{padding:6px 12px}
   .tabs{flex-basis:100%}
   #plano{padding:0;align-items:stretch}
@@ -330,13 +350,13 @@ body.sheet-open #map{padding-bottom:75vh}
   body.imprimindo-plano > *:not(#plprint){display:none!important}
   body.imprimindo-plano #plprint{display:block}
   html,body{height:auto;overflow:visible;background:#fff;display:block;padding:0}
-  header,.bar,.hint,#panel,#toast,.edge,.rz,#ghost,#hover,#sizeTag,.empty{display:none!important}
+  header,.bar,.hint,#panel,#toast,.edge,.rz,#ghost,#hover,#sizeTag,.empty,.legenda{display:none!important}
   #plist{display:block;break-before:page;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #printhead{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 6px;font-size:12px}
   #printhead h1{font-size:16px;margin:0}
   #map{overflow:visible;padding:0}
   #room{margin:0;box-shadow:none}
-  .eq,.w,.flag,#room{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .eq,.eq .band,.w,.flag,#room{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .eq{box-shadow:none!important;opacity:1!important}
 }
 </style>
@@ -384,6 +404,7 @@ body.sheet-open #map{padding-bottom:75vh}
     <div class="edge c" data-edge="c" title="Arraste para mudar o tamanho da sala"></div>
     <div id="sizeTag"></div>
   </div>
+  <div class="legenda" aria-label="Legenda"><span><i class="lg-ok"></i>Em dia</span><span><i class="lg-soon"></i>Vence em até 30 dias</span><span><i class="lg-late"></i>Vencido</span><span><i class="lg-none"></i>Sem data</span></div>
 </main>
 
 <div id="panel" role="dialog" aria-labelledby="ptitle" hidden>
@@ -433,6 +454,23 @@ const COLORS = [
   {id:'rosa',    nome:'Rosa',    fill:'#f9dfea', bd:'#d088a5'},
 ];
 const colorOf = id => COLORS.find(c => c.id === id) || COLORS[0];
+// Cor do equipamento no mapa = situação dos itens: vermelho (vencido), amarelo (vence em até 30 dias),
+// verde (tudo em dia), cinza (nenhuma data de calibração).
+const STATUS_COR = {
+  late: {fill:'#fde6e6', bd:'#d64545', band:'#c62828', ink:'#ffffff', nome:'Vencido'},
+  soon: {fill:'#fff7d6', bd:'#d9a900', band:'#f5c400', ink:'#3a2e00', nome:'Vence em até 30 dias'},
+  ok:   {fill:'#e2f3e7', bd:'#3f9b5f', band:'#2e7d4f', ink:'#ffffff', nome:'Em dia'},
+  none: {fill:'#f3f4f2', bd:'#b3bab4', band:'#dfe3de', ink:'#3a433e', nome:'Sem data de calibração'},
+};
+function statusEq(eq) {
+  let k = 'none';
+  for (const i of todosItens(eq)) {
+    const s = situacao(i.cal, i.val); if (!s) continue;
+    if (s.k === 'late') return 'late';
+    if (s.k === 'soon' || s.k === 'today') k = 'soon'; else if (k === 'none') k = 'ok';
+  }
+  return k;
+}
 
 const $ = s => document.querySelector(s);
 const mapEl = $('#map'), room = $('#room'), layer = $('#eqs'), ghost = $('#ghost'), hoverEl = $('#hover');
@@ -673,11 +711,14 @@ function render() {
   room.style.backgroundSize = `${s}px ${s}px`;
   const q = norm(query); let hits = 0;
   layer.innerHTML = R().equipamentos.map(eq => {
-    const c = colorOf(eq.cor), av = avisos(eq), top = av[0];
-    const lines = Math.max(1, Math.floor((eq.h * s - 4 - 9) / 15));
-    const parts = [`<div class="l code">${eq.codigo ? esc(eq.codigo) : '<span class="none">sem código</span>'}</div>`];
-    let left = lines - 1, flag = '';
-    if (top) { if (left > 0) { parts.push(`<div class="l"><span class="w ${top.s.k}">${esc(textoMapa(top.s))}</span></div>`); left--; } else flag = `<span class="flag ${top.s.k}"></span>`; }
+    const st = statusEq(eq), c = STATUS_COR[st], av = avisos(eq), top = av[0];
+    const bandH = s >= 34 ? 21 : 17;
+    // Letra do código encolhe para caber na faixa (de 14 px até 9 px).
+    const bfs = eq.w * s < 64 ? clamp(((eq.w * s - 8) * 2 / Math.max(1, (eq.codigo || 'sem código').length)) * 1.6, 8, 11) : clamp(((eq.w * s - 4 - 12) / Math.max(1, (eq.codigo || 'sem código').length)) * 1.7, 9, 14);
+    const lines = Math.max(0, Math.floor((eq.h * s - 4 - 3 - bandH - 4) / 15));
+    const parts = [];
+    let left = lines, flag = '';
+    if (top && left > 0) { parts.push(`<div class="l"><span class="w ${top.s.k}">${esc(textoMapa(top.s))}</span></div>`); left--; }
     if (eq.descricao && left > 0) { parts.push(`<div class="l desc">${esc(eq.descricao)}</div>`); left--; }
     const its = eq.itens.map(nomeItem);
     if (its.length && left > 0) {
@@ -693,7 +734,9 @@ function render() {
     let cls = 'eq';
     if (q) { if (matchEq(eq, q)) { cls += ' hit'; hits++; } else cls += ' dim'; }
     if (eq.id === openId) cls += ' sel';
-    return `<div class="${cls}" data-id="${esc(eq.id)}" tabindex="0" title="${esc(tip)}" style="left:${eq.x * s + 2}px;top:${eq.y * s + 2}px;width:${eq.w * s - 4}px;height:${eq.h * s - 4}px;--fill:${c.fill};--bd:${c.bd}">${parts.join('')}${flag}<span class="rz" data-rz title="Arraste para mudar o tamanho"></span></div>`;
+    if (eq.w * s < 64) cls += ' mini';
+    return `<div class="${cls} st-${st}" data-id="${esc(eq.id)}" tabindex="0" title="${esc(c.nome + '\n' + tip)}" style="left:${eq.x * s + 2}px;top:${eq.y * s + 2}px;width:${eq.w * s - 4}px;height:${eq.h * s - 4}px;--fill:${c.fill};--bd:${c.bd};--band:${c.band};--bink:${c.ink};--bh:${bandH}px;--bfs:${bfs.toFixed(1)}px">`
+      + `<div class="band">${eq.codigo ? esc(eq.codigo) : '<span class="none">sem código</span>'}</div><div class="corpo">${parts.join('')}</div>${flag}<span class="rz" data-rz title="Arraste para mudar o tamanho"></span></div>`;
   }).join('') + (R().equipamentos.length ? '' : `<div class="empty">${coarse ? 'Toque em um espaço vazio para criar o primeiro equipamento.<br>Depois: toque para editar, segure e arraste para mover.' : 'Clique em um espaço vazio para criar o primeiro equipamento.'}</div>`);
   const qc = $('#qcount');
   qc.textContent = q ? (hits === 0 ? 'Nada encontrado' : hits === 1 ? '1 encontrado' : `${hits} encontrados`) : '';
@@ -975,7 +1018,6 @@ function buildPanel() {
       <div class="chips"><span>Rápido:</span>${atalhos.map(t => `<button class="chip" data-add-desc="${esc(t)}">+ ${esc(t)}</button>`).join('')}</div>
     </div>
     <label class="f"><span>Anotação do equipamento</span><textarea data-f="anotacao" rows="2">${esc(eq.anotacao)}</textarea></label>
-    <div class="f"><span>Cor</span><div class="cores">${COLORS.map(c => `<button class="sw" data-cor="${c.id}" title="${c.nome}" aria-label="${c.nome}" aria-pressed="${eq.cor === c.id}" style="--fill:${c.fill};--bd:${c.bd}"></button>`).join('')}</div></div>
     ${S.salas.length > 1 ? `<label class="f"><span>Sala</span><select data-mover>${S.salas.map(x => `<option value="${esc(x.id)}"${x.id === S.atual ? ' selected' : ''}>${esc(x.nome || 'Sem nome')}</option>`).join('')}</select></label>` : ''}
     <div class="acts"><button class="btn" data-dupeq title="Cria uma cópia com os mesmos itens, sem as datas">Duplicar equipamento</button><button class="danger" data-del title="Excluir (tecla Delete)">Excluir equipamento</button></div>`;
   $('#ptitle').textContent = eq.codigo ? `Equipamento ${eq.codigo}` : 'Novo equipamento';
@@ -1531,7 +1573,7 @@ function preparePrint() {
   const {cols, rows} = R();
   printS = clamp(Math.floor(Math.min(1030 / cols, 640 / rows)), 8, 64);
   $('#phName').textContent = R().nome;
-  $('#phInfo').textContent = `Impresso em ${fmt(hoje())} · Laranja: vence em até ${AVISO_DIAS} dias · Vermelho: vencido`;
+  $('#phInfo').textContent = `Impresso em ${fmt(hoje())} · Verde: em dia · Amarelo: vence em até ${AVISO_DIAS} dias · Vermelho: vencido · Cinza: sem data`;
   render();
 }
 function endPrint() { if (!printS) return; printS = 0; render(); }
@@ -1564,7 +1606,7 @@ function pdfDoc(jspdf) {
   // Página 1: mapa
   doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(29, 36, 33); doc.text(sala.nome || 'Sala', M, M + 5);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(90, 100, 95);
-  doc.text(`Impresso em ${fmt(hoje())} · Laranja: vence em até ${AVISO_DIAS} dias · Vermelho: vencido`, W - M, M + 5, {align:'right'});
+  doc.text(`Impresso em ${fmt(hoje())} · Verde: em dia · Amarelo: vence em até ${AVISO_DIAS} dias · Vermelho: vencido · Cinza: sem data`, W - M, M + 5, {align:'right'});
   const top = M + 10, c = Math.min((W - 2 * M) / sala.cols, (H - top - M) / sala.rows);
   doc.setDrawColor(227, 231, 225); doc.setLineWidth(0.15);
   for (let i = 1; i < sala.cols; i++) doc.line(M + i * c, top, M + i * c, top + sala.rows * c);
@@ -1572,14 +1614,17 @@ function pdfDoc(jspdf) {
   doc.setDrawColor(190, 197, 189); doc.setLineWidth(0.3); doc.rect(M, top, sala.cols * c, sala.rows * c);
   const fs = clamp(c * 1.15, 4.5, 9), lh = fs * 0.3528 * 1.3;
   for (const eq of sala.equipamentos) {
-    const col = colorOf(eq.cor), x = M + eq.x * c + 0.5, y = top + eq.y * c + 0.5, w = eq.w * c - 1, h = eq.h * c - 1;
-    doc.setFillColor(...rgb(col.fill)); doc.setDrawColor(...rgb(col.bd)); doc.setLineWidth(0.35);
+    const col = STATUS_COR[statusEq(eq)], x = M + eq.x * c + 0.5, y = top + eq.y * c + 0.5, w = eq.w * c - 1, h = eq.h * c - 1;
+    doc.setFillColor(...rgb(col.fill)); doc.setDrawColor(...rgb(col.bd)); doc.setLineWidth(0.5);
     doc.roundedRect(x, y, w, h, 1, 1, 'FD');
+    const bh = Math.min(h, lh * 1.35);
+    doc.setFillColor(...rgb(col.band)); doc.rect(x + 0.25, y + 0.25, w - 0.5, bh - 0.25, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(fs * 1.1); doc.setTextColor(...rgb(col.ink));
+    doc.text(cortar(doc, eq.codigo || 'sem código', w - 2), x + 1, y + bh * 0.72);
     const tw = w - 2, top1 = avisos(eq)[0];
-    let ly = y + 1 + lh * 0.8, left = Math.max(1, Math.floor((h - 1.5) / lh));
+    let ly = y + bh + lh * 0.8, left = Math.max(0, Math.floor((h - bh - 1) / lh));
     const linha = (txt, bold, cor) => { if (left <= 0) return; doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setFontSize(fs); doc.setTextColor(...cor); doc.text(cortar(doc, txt, tw), x + 1, ly); ly += lh; left--; };
-    linha(eq.codigo || 'sem código', true, [29, 36, 33]);
-    if (top1) linha(textoMapa(top1.s), true, top1.s.k === 'late' ? [194, 39, 39] : [180, 95, 0]);
+    if (top1) linha(textoMapa(top1.s), true, top1.s.k === 'late' ? [194, 39, 39] : [120, 90, 0]);
     if (eq.descricao) linha(eq.descricao, false, [54, 64, 59]);
     const its = eq.itens.map(nomeItem);
     if (its.length && left > 0) {
