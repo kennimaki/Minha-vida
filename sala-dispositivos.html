@@ -2021,7 +2021,12 @@ async function entregarPDF(botao, gerar, nome, semInternet) {
         () => toast('PDF pronto. Abra o arquivo e use Imprimir.'),
         err => { if (err && err.code !== 'declined') toast('Não foi possível salvar o PDF aqui. Tente em um navegador.', {error:true}); });
       else doc.save(nome);
-    } else if (aba) { aba.location.href = doc.output('bloburl'); }
+    } else if (aba) {
+      try {
+        aba.document.write(`<!doctype html><title>${esc(nome)}</title><style>html,body{margin:0;height:100%;background:#525659}</style><embed src="${doc.output('datauristring')}" type="application/pdf" style="width:100%;height:100%">`);
+        aba.document.close();
+      } catch (e) { aba.close(); doc.save(nome); }
+    }
     else doc.save(nome);
   } catch (e) {
     if (aba) aba.close();
