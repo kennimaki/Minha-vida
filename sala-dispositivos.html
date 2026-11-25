@@ -156,6 +156,24 @@ body.modo-geral #roomName{cursor:default}
 .edge.b::after{top:4px;left:50%;height:4px;width:36px;margin-left:-18px}
 .edge.c::after{inset:4px;border-radius:50%}
 .edge:hover::after,.edge.on::after{background:var(--acc)}
+.btn.tool{display:flex;align-items:center;gap:6px;padding:6px 10px;flex:none}
+.btn.tool[aria-pressed="true"]{background:var(--focus);border-color:var(--focus);color:#fff}
+body.modo-sel #room{cursor:crosshair;touch-action:none}
+body.modo-sel .eq{cursor:pointer;touch-action:none}
+.eq.msel{box-shadow:0 0 0 3px var(--focus)!important;z-index:3}
+.eq.msel::after{content:"✓";position:absolute;right:3px;bottom:2px;width:16px;height:16px;border-radius:50%;background:var(--focus);color:#fff;font-size:11px;font-weight:700;line-height:16px;text-align:center}
+.eq.msel .rz{display:none}
+.eq.mini.msel::after{display:none}
+.eq.mini.msel{box-shadow:0 0 0 3px var(--focus),0 0 0 5px #fff!important}
+body.modo-sel #map{padding-bottom:150px}
+#selbox{position:absolute;border:1.5px dashed var(--focus);background:rgba(31,95,191,.10);display:none;pointer-events:none;z-index:4}
+.gghost{position:absolute;border-radius:6px;border:2px dashed var(--acc);background:rgba(47,107,85,.12);pointer-events:none;z-index:5}
+.gghost.bad{border-color:var(--late);background:rgba(194,39,39,.10)}
+#selbar{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:8px 10px;display:flex;align-items:center;gap:8px;max-width:calc(100vw - 24px)}
+#selbar[hidden]{display:none}
+#selbar .sn{font-weight:700;white-space:nowrap}
+#selbar .sd{font-size:12px;color:var(--muted)}
+#selbar .btn.small{margin-left:0}
 .legenda{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;font-size:12px;color:var(--muted);margin-top:44px}
 .legenda span{display:flex;align-items:center;gap:6px}
 .legenda i{width:14px;height:14px;border-radius:4px;border:2px solid}
@@ -334,7 +352,11 @@ body.modo-geral #roomName{cursor:default}
   input,select,textarea{font-size:16px!important}
   #map{padding:16px 60px 40px 16px}
   .bar{padding:6px 12px}
-  .tabs{flex-basis:100%}
+  .tabs{flex:1 1 0}
+  .btn.tool .lg2{display:none}
+  .btn.tool{padding:6px 9px;height:36px}
+  #selbar{left:8px;right:8px;transform:none;flex-wrap:wrap;justify-content:space-between}
+  #selbar .sd{order:5;width:100%}
   #plano{padding:0;align-items:stretch}
   .plbox{border-radius:0;height:100%;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
   .plfiltros{grid-template-columns:1fr 1fr}
@@ -370,7 +392,7 @@ body.modo-geral #roomName{cursor:default}
   body.imprimindo-plano > *:not(#plprint){display:none!important}
   body.imprimindo-plano #plprint{display:block}
   html,body{height:auto;overflow:visible;background:#fff;display:block;padding:0}
-  header,.bar,.hint,#panel,#toast,.edge,.rz,#ghost,#hover,#sizeTag,.empty,.legenda{display:none!important}
+  header,.bar,.hint,#panel,#toast,#selbar,#selbox,.edge,.rz,#ghost,#hover,#sizeTag,.empty,.legenda{display:none!important}
   #plist{display:block;break-before:page;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #printhead{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 6px;font-size:12px}
   #printhead h1{font-size:16px;margin:0}
@@ -405,6 +427,7 @@ body.modo-geral #roomName{cursor:default}
   </div>
 </header>
 <nav class="bar" aria-label="Salas">
+  <button class="btn tool" id="bSel" aria-pressed="false" title="Selecionar objetos: marque vários para mover juntos (Esc para sair)"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v12.2l3.3-3.2 2.2 4.8 2.1-.95-2.2-4.75h4.6z" fill="currentColor" stroke="currentColor" stroke-width=".6" stroke-linejoin="round"/></svg><span class="lg2">Selecionar</span></button>
   <div class="tabs" id="tabs"></div>
   <div class="sizectl">
     <span class="lbl">Col<span class="lg">unas</span></span><button class="sb" data-size="c-" aria-label="Remover uma coluna" title="Remover a última coluna">−</button><output id="nCols"></output><button class="sb" data-size="c+" aria-label="Adicionar uma coluna" title="Adicionar uma coluna">+</button>
@@ -419,6 +442,7 @@ body.modo-geral #roomName{cursor:default}
     <div id="hover">+</div>
     <div id="eqs"></div>
     <div id="ghost"></div>
+    <div id="selbox"></div>
     <div class="edge r" data-edge="r" title="Arraste para mudar a largura da sala"></div>
     <div class="edge b" data-edge="b" title="Arraste para mudar a altura da sala"></div>
     <div class="edge c" data-edge="c" title="Arraste para mudar o tamanho da sala"></div>
@@ -452,6 +476,7 @@ body.modo-geral #roomName{cursor:default}
   </div>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
+<div id="selbar" hidden><span class="sn" id="selN"></span><span class="sd" id="selDica"></span><button class="btn small" id="selTudo">Todos</button><button class="btn small perigo" id="selDel">Excluir</button><button class="btn small primary" id="selSair">Concluir</button></div>
 <div id="sugest" role="listbox" hidden></div>
 <div id="imenu" role="menu" hidden></div>
 <div id="modal" hidden><div class="mbox" role="dialog" aria-modal="true" aria-labelledby="mtitle"><h3 id="mtitle"></h3><div id="mbody"></div><div class="mbtns" id="mbtns"></div></div></div>
@@ -793,6 +818,7 @@ function render() {
     let cls = 'eq sala';
     if (q) { if (e.hits || norm(sala.nome).includes(q)) { cls += ' hit'; hits++; } else cls += ' dim'; }
     if (b.w * s < 64) cls += ' mini';
+    if (selecao.has(b.id)) cls += ' msel';
     const tip = `${sala.nome}\n${STATUS_COR[st].nome}\n${n} equipamentos · ${e.late} vencidos · ${e.soon} a vencer · ${miss} sem data\nToque para abrir a sala`;
     return `<div class="${cls} st-${st}" data-id="${esc(b.id)}" tabindex="0" title="${esc(tip)}" style="left:${b.x * s + 2}px;top:${b.y * s + 2}px;width:${b.w * s - 4}px;height:${b.h * s - 4}px;--fill:${c.fill};--bd:${c.bd};--band:${c.band};--bink:${c.ink};--bh:${bandH}px;--bfs:${bfs.toFixed(1)}px">`
       + `<div class="band">${esc(sala.nome)}</div><div class="corpo">${ls.slice(0, lines).map(t => `<div class="l">${t}</div>`).join('')}</div><span class="rz" data-rz title="Arraste para mudar o tamanho"></span></div>`;
@@ -821,6 +847,7 @@ function render() {
     let cls = 'eq';
     if (q) { if (matchEq(eq, q)) { cls += ' hit'; hits++; } else cls += ' dim'; }
     if (eq.id === openId) cls += ' sel';
+    if (selecao.has(eq.id)) cls += ' msel';
     if (eq.w * s < 64) cls += ' mini';
     return `<div class="${cls} st-${st}" data-id="${esc(eq.id)}" tabindex="0" title="${esc(c.nome + '\n' + tip)}" style="left:${eq.x * s + 2}px;top:${eq.y * s + 2}px;width:${eq.w * s - 4}px;height:${eq.h * s - 4}px;--fill:${c.fill};--bd:${c.bd};--band:${c.band};--bink:${c.ink};--bh:${bandH}px;--bfs:${bfs.toFixed(1)}px">`
       + `<div class="band">${eq.codigo ? esc(eq.codigo) : '<span class="none">sem código</span>'}</div><div class="corpo">${parts.join('')}</div>${flag}<span class="rz" data-rz title="Arraste para mudar o tamanho"></span></div>`;
@@ -832,10 +859,11 @@ function render() {
   document.title = (R().nome || 'Sala') + ' · Sala de Dispositivos';
   nameEl.readOnly = isGeral(); nameEl.title = isGeral() ? 'Planta da fábrica: arraste as salas para montar o layout' : 'Nome da sala (toque para renomear)';
   document.body.classList.toggle('modo-geral', isGeral());
-  $('#hint').textContent = isGeral()
+  $('#hint').textContent = modoSel ? 'Selecionar objetos: clique nos objetos ou arraste num espaço vazio para marcar vários; depois arraste um deles para mover todos. Esc ou Concluir para sair.' : isGeral()
     ? (coarse ? 'Planta da fábrica. Segure e arraste uma sala para mudar de lugar. Puxe o canto para mudar o tamanho. Toque para abrir a sala.' : 'Planta da fábrica. Arraste uma sala para mudar de lugar (sobre outra do mesmo tamanho, troca de lugar). Puxe o canto para mudar o tamanho. Clique para abrir a sala.')
     : (coarse ? 'Toque em um espaço vazio para criar. Toque em um equipamento para editar. Segure e arraste para mover. Puxe o canto para mudar o tamanho.' : 'Clique em um espaço vazio para criar. Clique em um equipamento para editar. Arraste para mover (sobre outro do mesmo tamanho, troca de lugar). Puxe o canto para mudar o tamanho. Puxe a borda da sala para aumentá-la.');
   resumo(); renderTabs();
+  if (modoSel) { for (const id of [...selecao]) if (!R().equipamentos.some(o => o.id === id)) selecao.delete(id); atualizarSelbar(); }
   const pl = document.getElementById('plano'); if (pl && !pl.hidden) renderPlano();
 }
 function estadoSala(sala, q) {
@@ -915,11 +943,104 @@ function autoScroll(e) {
   if (dx || dy) mapEl.scrollBy(dx, dy);
 }
 
+/* ====== Selecionar objetos (vários de uma vez) ====== */
+let modoSel = false;
+const selecao = new Set();
+function atualizarSelbar() {
+  const n = [...selecao].filter(id => find(id)).length;
+  $('#selbar').hidden = !modoSel;
+  $('#selN').textContent = n ? `${n} ${isGeral() ? (n === 1 ? 'sala selecionada' : 'salas selecionadas') : (n === 1 ? 'selecionado' : 'selecionados')}` : 'Nada selecionado';
+  $('#selDica').textContent = n ? (coarse ? 'Arraste um deles para mover todos.' : 'Arraste um deles para mover todos. Setas do teclado movem uma casa.')
+    : (coarse ? 'Toque nos objetos ou arraste o dedo num espaço vazio para marcar.' : 'Clique nos objetos ou arraste num espaço vazio para desenhar a seleção.');
+  $('#selDel').hidden = !n || isGeral();
+  $('#selTudo').hidden = !R().equipamentos.length || n === R().equipamentos.length;
+}
+function ligarSelecao(on) {
+  modoSel = on; selecao.clear();
+  if (on) { closePanel(); fecharMenuItem(); }
+  $('#bSel').setAttribute('aria-pressed', on);
+  document.body.classList.toggle('modo-sel', on);
+  render(); atualizarSelbar();
+}
+function alternarSel(id) { if (selecao.has(id)) selecao.delete(id); else selecao.add(id); render(); atualizarSelbar(); }
+$('#bSel').addEventListener('click', () => ligarSelecao(!modoSel));
+$('#selSair').addEventListener('click', () => ligarSelecao(false));
+$('#selTudo').addEventListener('click', () => { R().equipamentos.forEach(o => selecao.add(o.id)); render(); atualizarSelbar(); });
+$('#selDel').addEventListener('click', () => {
+  const ids = [...selecao].filter(id => find(id)); if (!ids.length || isGeral()) return;
+  const nomes = ids.map(id => find(id).codigo || 'sem código');
+  confirmar('Excluir equipamentos?', `${ids.length} ${ids.length === 1 ? 'equipamento será excluído' : 'equipamentos serão excluídos'}, com os itens deles: ${nomes.slice(0, 8).join(', ')}${nomes.length > 8 ? '…' : ''}.`, 'Excluir').then(ok => {
+    if (!ok) return;
+    snap(); R().equipamentos = R().equipamentos.filter(o => !ids.includes(o.id)); selecao.clear(); changed(); atualizarSelbar();
+    toast(`${ids.length} ${ids.length === 1 ? 'equipamento excluído' : 'equipamentos excluídos'}`, {label:'Desfazer', action:undo});
+  });
+});
+// Tenta deslocar o grupo selecionado; devolve o deslocamento possível e se é válido.
+function moverGrupo(dx, dy, aplicar) {
+  const r = R(), grupo = r.equipamentos.filter(o => selecao.has(o.id)), outros = r.equipamentos.filter(o => !selecao.has(o.id));
+  if (!grupo.length) return {ok:false};
+  dx = clamp(dx, -Math.min(...grupo.map(o => o.x)), r.cols - Math.max(...grupo.map(o => o.x + o.w)));
+  dy = clamp(dy, -Math.min(...grupo.map(o => o.y)), r.rows - Math.max(...grupo.map(o => o.y + o.h)));
+  const ok = !grupo.some(o => outros.some(t => overlap(t, o.x + dx, o.y + dy, o.w, o.h)));
+  if (ok && aplicar && (dx || dy)) { grupo.forEach(o => { o.x += dx; o.y += dy; }); }
+  return {ok, dx, dy, grupo};
+}
+function selPress(e, eqEl) {
+  e.preventDefault();
+  const s = curS, sx = e.clientX, sy = e.clientY, rr = room.getBoundingClientRect();
+  gesture = {lock:true};
+  if (eqEl) { // arrastar o grupo (ou marcar/desmarcar com um toque)
+    const id = eqEl.dataset.id, estava = selecao.has(id);
+    if (!estava) { selecao.add(id); eqEl.classList.add('msel'); atualizarSelbar(); }
+    const before = JSON.stringify(S); let movendo = false, res = {ok:true, dx:0, dy:0};
+    const ghosts = [];
+    track(e.pointerId, ev => {
+      if (!movendo && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 5) return;
+      if (!movendo) { movendo = true; layer.querySelectorAll('.eq.msel').forEach(el => el.classList.add('dragging')); }
+      autoScroll(ev);
+      const r2 = room.getBoundingClientRect();
+      const dx = Math.round((ev.clientX - sx - (r2.left - rr.left)) / s), dy = Math.round((ev.clientY - sy - (r2.top - rr.top)) / s);
+      res = moverGrupo(dx, dy, false);
+      ghosts.forEach(g => g.remove()); ghosts.length = 0;
+      for (const o of res.grupo || []) {
+        const g = document.createElement('div'); g.className = 'gghost' + (res.ok ? '' : ' bad');
+        Object.assign(g.style, {left:(o.x + res.dx) * s + 2 + 'px', top:(o.y + res.dy) * s + 2 + 'px', width:o.w * s - 4 + 'px', height:o.h * s - 4 + 'px'});
+        room.appendChild(g); ghosts.push(g);
+      }
+    }, (ev, cancelled) => {
+      gesture = null; ghosts.forEach(g => g.remove());
+      layer.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+      if (cancelled) { render(); return; }
+      if (!movendo) { if (estava) selecao.delete(id); render(); atualizarSelbar(); return; }
+      if (res.ok && (res.dx || res.dy)) { pushRaw(before); moverGrupo(res.dx, res.dy, true); changed(); }
+      else { render(); if (!res.ok) toast('Não cabe: algum objeto ficaria em cima de outro.', {error:true}); }
+    });
+    return;
+  }
+  // retângulo de seleção
+  const box = $('#selbox'); let desenhou = false;
+  const cel = (cx, cy) => { const r2 = room.getBoundingClientRect(); return {x:(cx - r2.left) / s, y:(cy - r2.top) / s}; };
+  const a = cel(sx, sy); let b2 = a;
+  track(e.pointerId, ev => {
+    if (!desenhou && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 5) return;
+    desenhou = true; autoScroll(ev); b2 = cel(ev.clientX, ev.clientY);
+    Object.assign(box.style, {display:'block', left:Math.min(a.x, b2.x) * s + 'px', top:Math.min(a.y, b2.y) * s + 'px', width:Math.abs(b2.x - a.x) * s + 'px', height:Math.abs(b2.y - a.y) * s + 'px'});
+  }, (ev, cancelled) => {
+    gesture = null; box.style.display = 'none';
+    if (cancelled) return;
+    if (!desenhou) { if (!e.shiftKey && !e.ctrlKey && !e.metaKey) { selecao.clear(); render(); atualizarSelbar(); } return; }
+    if (!e.shiftKey && !e.ctrlKey && !e.metaKey && !coarse) selecao.clear();
+    const x1 = Math.min(a.x, b2.x), y1 = Math.min(a.y, b2.y), x2 = Math.max(a.x, b2.x), y2 = Math.max(a.y, b2.y);
+    for (const o of R().equipamentos) if (o.x < x2 && o.x + o.w > x1 && o.y < y2 && o.y + o.h > y1) selecao.add(o.id);
+    render(); atualizarSelbar();
+  });
+}
 room.addEventListener('pointerdown', e => {
   if (e.button > 0 || gesture) return;
   const panelWasOpen = !!openId;
   hoverEl.style.display = 'none';
   const edge = e.target.closest('[data-edge]'); if (edge) return roomResize(e, edge);
+  if (modoSel) return selPress(e, e.target.closest('.eq'));
   const eqEl = e.target.closest('.eq');
   if (eqEl && e.target.closest('[data-rz]')) return eqResize(e, eqEl.dataset.id, eqEl);
   if (eqEl) return eqPress(e, eqEl.dataset.id, eqEl);
@@ -1162,6 +1283,7 @@ function placePanel() {
 }
 function abrirSala(id) {
   if (!S.salas.some(x => x.id === id)) return;
+  selecao.clear(); if (modoSel) ligarSelecao(false);
   S.atual = id; saveLocal(); render(); mapEl.scrollTo(0, 0); window.scrollTo(0, 0);
 }
 function openPanel(id, focusCode) {
@@ -1603,7 +1725,8 @@ $('#tabs').addEventListener('click', e => {
     return;
   }
   if (b.dataset.sala && b.dataset.sala !== S.atual) {
-    S.atual = b.dataset.sala; save(); render(); mapEl.scrollTo(0, 0);
+    selecao.clear();
+    S.atual = b.dataset.sala; save(); render(); mapEl.scrollTo(0, 0); atualizarSelbar();
   }
 });
 document.querySelector('.sizectl').addEventListener('click', e => {
@@ -2010,6 +2133,13 @@ document.addEventListener('keydown', e => {
   if (!plano.hidden) { if (e.key === 'Escape') { e.preventDefault(); fecharPlano(); } return; }
   if (e.key === 'Escape' && !imenu.hidden) { e.preventDefault(); fecharMenuItem(); return; }
   if (modalFim) return;
+  if (modoSel && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) {
+    if (e.key === 'Escape') { e.preventDefault(); if (selecao.size) { selecao.clear(); render(); atualizarSelbar(); } else ligarSelecao(false); return; }
+    const d = {ArrowLeft:[-1, 0], ArrowRight:[1, 0], ArrowUp:[0, -1], ArrowDown:[0, 1]}[e.key];
+    if (d && selecao.size) { e.preventDefault(); const before = JSON.stringify(S); const r = moverGrupo(d[0], d[1], false); if (r.ok && (r.dx || r.dy)) { pushRaw(before); moverGrupo(r.dx, r.dy, true); changed(); } return; }
+    if (e.key === 'Delete' && selecao.size && !isGeral()) { e.preventDefault(); $('#selDel').click(); return; }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') { e.preventDefault(); $('#selTudo').click(); return; }
+  }
   if (e.key === 'Escape' && openId) { e.preventDefault(); closePanel(); return; }
   if (e.key === 'Delete' && !isGeral() && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) {
     const id = openId || (e.target.closest && e.target.closest('.eq') ? e.target.closest('.eq').dataset.id : null);
