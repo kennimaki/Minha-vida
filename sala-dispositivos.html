@@ -145,6 +145,17 @@ body.sheet-open #map{padding-bottom:75vh}
 .addrow .add{flex:1}
 .mini textarea{border:1px solid var(--line);border-radius:7px;padding:6px 8px;background:#fff;width:100%;resize:vertical;min-height:32px}
 .mini textarea:focus{border-color:var(--acc);outline:none;box-shadow:0 0 0 2px rgba(47,107,85,.15)}
+#sugest{position:fixed;z-index:55;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:4px;max-height:280px;overflow:auto}
+#sugest[hidden]{display:none}
+.srow{display:flex;align-items:center;gap:2px;border-radius:7px}
+.srow.on,.srow:hover{background:#eef4f0}
+.srow.conf{background:var(--late-bg);padding:4px;gap:6px}
+.sopt{flex:1;min-width:0;border:0;background:transparent;text-align:left;padding:8px 10px;display:flex;gap:8px;align-items:baseline;font-size:13px}
+.sopt b{flex:1;min-width:0;font-weight:600;overflow-wrap:anywhere}
+.sopt span{color:var(--muted);font-size:12px;white-space:nowrap}
+.sx{border:0;background:transparent;color:var(--muted);width:30px;height:30px;border-radius:6px;font-size:16px;flex:none}
+.sx:hover{background:var(--late-bg);color:var(--late)}
+.sconf{flex:1;font-size:12.5px;padding:0 4px}
 #imenu{position:fixed;z-index:50;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:4px;display:flex;flex-direction:column;min-width:210px}
 #imenu[hidden]{display:none}
 #imenu button{border:0;background:transparent;text-align:left;padding:9px 12px;border-radius:7px;font-size:13.5px}
@@ -312,7 +323,7 @@ body.sheet-open #map{padding-bottom:75vh}
 </div>
 <section id="plist" aria-hidden="true"></section>
 <div id="toast" role="status" aria-live="polite"></div>
-<datalist id="memList"></datalist>
+<div id="sugest" role="listbox" hidden></div>
 <div id="imenu" role="menu" hidden>
   <button data-acao="mover" role="menuitem">Mover para outra máquina…</button>
   <button data-acao="duplicar" role="menuitem">Duplicar</button>
@@ -832,7 +843,7 @@ function itemHTML(it) {
       <button class="dots" data-menu title="Mover, duplicar ou excluir" aria-label="Opções do item" aria-haspopup="menu">⋯</button></div>
     <div class="row2">
       <label class="mini"><span>Código</span><input data-if="codigo" value="${esc(it.codigo)}" placeholder="ex.: TC-01" autocomplete="off"></label>
-      <label class="mini"><span>Descrição</span><input data-if="descricao" value="${esc(it.descricao)}" list="memList" placeholder="ex.: Controle de temperatura" autocomplete="off"></label>
+      <label class="mini"><span>Descrição</span><input data-if="descricao" value="${esc(it.descricao)}" placeholder="ex.: Controle de temperatura" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="sugest"></label>
     </div>
     ${calHTML('data-if', it.id, it.calibracao, it.validade)}
     <label class="mini"><span>Observação</span><textarea data-if="obs" rows="1" placeholder="ex.: faixa 0–400 °C, certificado nº 1234">${esc(it.obs)}</textarea></label>
@@ -849,7 +860,6 @@ function lembrar(descricao, validade, usar) {
 function buildPanel() {
   const eq = find(openId); if (!eq) return;
   const mem = memoriaOrdenada();
-  $('#memList').innerHTML = mem.map(m => `<option value="${esc(m.descricao)}">`).join('');
   const atalhos = (mem.length ? mem.map(m => m.descricao) : MEMORIA_PADRAO).slice(0, 3);
   const n = eq.itens.length;
   pbody.innerHTML = `
@@ -926,6 +936,7 @@ const vazio = eq => !eq.codigo.trim() && !eq.descricao.trim() && !eq.calibracao 
 function closePanel() {
   if (!openId) return;
   const ae = document.activeElement; if (ae && panel.contains(ae)) ae.blur();
+  fecharSugestoes();
   const id = openId; openId = null; lastKey = null; panel.hidden = true;
   document.body.classList.remove('sheet-open');
   if (novo && novo.id === id) {
@@ -1158,6 +1169,75 @@ function escolherEquipamento(titulo, opcoes) {
     lst.addEventListener('click', e => { const b = e.target.closest('[data-pick]'); if (b) fim(b.dataset.pick); });
   });
 }
+/* ====== Sugestões da memória no campo Descrição do item ====== */
+const sugest = $('#sugest');
+let sugInp = null, sugSel = -1;
+function fecharSugestoes() { sugest.hidden = true; sugInp = null; sugSel = -1; }
+function mostrarSugestoes(inp) {
+  sugInp = inp;
+  const q = norm(inp.value);
+  const lista = memoriaOrdenada().filter(m => !q || norm(m.descricao).includes(q)).slice(0, 8);
+  if (!lista.length) { sugest.hidden = true; return; }
+  sugSel = Math.min(sugSel, lista.length - 1);
+  sugest.innerHTML = lista.map((m, i) => `<div class="srow${i === sugSel ? ' on' : ''}" data-desc="${esc(m.descricao)}">
+      <button class="sopt" data-usar tabindex="-1"><b>${esc(m.descricao)}</b><span>${m.validade} ${m.validade === 1 ? 'ano' : 'anos'}</span></button>
+      <button class="sx" data-tirar tabindex="-1" title="Tirar da memória" aria-label="Tirar ${esc(m.descricao)} da memória">×</button></div>`).join('');
+  const r = inp.getBoundingClientRect();
+  sugest.hidden = false;
+  sugest.style.width = Math.min(Math.max(r.width, 380), innerWidth - 16) + 'px';
+  sugest.style.left = clamp(r.left, 8, innerWidth - sugest.offsetWidth - 8) + 'px';
+  const abaixo = r.bottom + 4, h = sugest.offsetHeight;
+  sugest.style.top = (abaixo + h > innerHeight - 8 && r.top - h - 4 > 8 ? r.top - h - 4 : abaixo) + 'px';
+}
+function usarSugestao(desc) {
+  const inp = sugInp; fecharSugestoes(); if (!inp) return;
+  inp.value = desc; inp.dispatchEvent(new Event('input', {bubbles:true}));
+  const row = inp.closest('.item'), d = row && row.querySelector('[data-if="calibracao"]');
+  if (d) d.focus(); else inp.focus();
+}
+// Mantém o foco no campo enquanto se clica na lista.
+sugest.addEventListener('pointerdown', e => e.preventDefault());
+sugest.addEventListener('click', e => {
+  const row = e.target.closest('.srow'); if (!row) return;
+  const d = row.dataset.desc;
+  if (e.target.closest('[data-usar]')) return usarSugestao(d);
+  if (e.target.closest('[data-tirar]')) { // confirmação na própria linha
+    row.classList.add('conf');
+    row.innerHTML = `<span class="sconf">Tirar “${esc(d)}” da memória?</span><button class="btn small" data-nao tabindex="-1">Cancelar</button><button class="btn small perigo" data-sim tabindex="-1">Tirar</button>`;
+    return;
+  }
+  if (e.target.closest('[data-nao]')) return mostrarSugestoes(sugInp);
+  if (e.target.closest('[data-sim]')) {
+    S.memoria = S.memoria.filter(m => norm(m.descricao) !== norm(d)); save();
+    toast(`“${d}” saiu da memória. Os itens já cadastrados não mudam.`);
+    if (sugInp) mostrarSugestoes(sugInp);
+    buildChips();
+  }
+});
+function buildChips() {
+  const c = pbody.querySelector('.chips'); if (!c) return;
+  const mem = memoriaOrdenada(), atalhos = (mem.length ? mem.map(m => m.descricao) : MEMORIA_PADRAO).slice(0, 3);
+  c.innerHTML = '<span>Rápido:</span>' + atalhos.map(t => `<button class="chip" data-add-desc="${esc(t)}">+ ${esc(t)}</button>`).join('');
+}
+pbody.addEventListener('focusin', e => { if (e.target.dataset.if === 'descricao') { sugSel = -1; mostrarSugestoes(e.target); } });
+pbody.addEventListener('input', e => { if (e.target.dataset.if === 'descricao' && e.target === sugInp) { sugSel = -1; mostrarSugestoes(e.target); } });
+pbody.addEventListener('focusout', e => { if (e.target === sugInp) setTimeout(() => { if (document.activeElement !== sugInp) fecharSugestoes(); }, 120); });
+pbody.addEventListener('scroll', fecharSugestoes);
+pbody.addEventListener('keydown', e => {
+  if (sugest.hidden || e.target !== sugInp) return;
+  const rows = [...sugest.querySelectorAll('.srow:not(.conf)')];
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault(); e.stopImmediatePropagation();
+    if (e.key === 'ArrowDown') sugSel = sugSel + 1 >= rows.length ? -1 : sugSel + 1;
+    else sugSel = sugSel - 1 < -1 ? rows.length - 1 : sugSel - 1;
+    rows.forEach((r, i) => r.classList.toggle('on', i === sugSel));
+  } else if (e.key === 'Enter' && sugSel >= 0 && rows[sugSel]) {
+    e.preventDefault(); e.stopImmediatePropagation(); usarSugestao(rows[sugSel].dataset.desc);
+  } else if (e.key === 'Escape') {
+    e.preventDefault(); e.stopImmediatePropagation(); fecharSugestoes();
+  }
+}, true);
+
 /* ====== Exclusão com confirmação ====== */
 function pedirExclusaoEquipamento(id) {
   const eq = find(id); if (!eq) return;
@@ -1177,7 +1257,7 @@ pbody.addEventListener('keydown', e => {
 });
 $('#pclose').addEventListener('click', closePanel);
 document.addEventListener('pointerdown', e => {
-  if (!openId || panel.contains(e.target) || e.target.closest('#toast,#modal,#imenu')) return;
+  if (!openId || panel.contains(e.target) || e.target.closest('#toast,#modal,#imenu,#sugest')) return;
   closePanel();
 });
 // Arrastar o painel pelo título
