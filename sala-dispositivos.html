@@ -160,7 +160,13 @@ body.sheet-open #map{padding-bottom:75vh}
 .mbtns{display:flex;justify-content:flex-end;gap:8px}
 .btn.perigo{background:var(--late);border-color:var(--late);color:#fff}
 .btn.perigo:hover{background:#a51f1f}
-.mbusca{border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+.mbusca,.mcampo input{border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;background:#fff;color:var(--ink)}
+.mcampo{display:flex;flex-direction:column;gap:3px}
+.mcampo span{font-size:12px;color:var(--muted);font-weight:550}
+.mcampo input:focus{border-color:var(--acc);outline:none;box-shadow:0 0 0 2px rgba(47,107,85,.15)}
+.mconf{flex:1;font-size:13px;padding:6px 4px}
+.mrow .btn.small{margin-left:0}
+.mrow.sel .mopt{background:#e6efe9;border-color:#bcd3c5}
 .mbusca:focus{border-color:var(--acc);outline:none}
 .mlista{display:flex;flex-direction:column;gap:2px;overflow:auto}
 .mg{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:8px 4px 2px}
@@ -1019,20 +1025,21 @@ function moverPara(eq, salaId) {
   closePanel(); changed();
   toast(`${eq.codigo || 'Equipamento'} foi para a sala ${dest.nome}.`, {label:'Desfazer', action:undo});
 }
-function novoItem(eq, descricao, validade) {
+function novoItem(eq, descricao, validade, codigo) {
   snap();
-  const it = {id: uid(), codigo:'', descricao: descricao || '', calibracao:'', validade: validadeDe(validade), obs:''};
+  const it = {id: uid(), codigo: codigo || '', descricao: descricao || '', calibracao:'', validade: validadeDe(validade), obs:''};
   eq.itens.push(it);
   if (descricao) lembrar(descricao, validade, true);
   changed(); refreshPanel();
-  const inp = pbody.querySelector(`[data-iid="${CSS.escape(it.id)}"] [data-if="${descricao ? 'codigo' : 'descricao'}"]`);
+  const campo = !it.codigo ? 'codigo' : !it.descricao ? 'descricao' : 'calibracao';
+  const inp = pbody.querySelector(`[data-iid="${CSS.escape(it.id)}"] [data-if="${campo}"]`);
   if (inp) { inp.focus(); inp.scrollIntoView({block:'nearest'}); }
 }
 pbody.addEventListener('click', e => {
   const eq = find(openId); if (!eq) return;
   const b = e.target.closest('button'); if (!b) return;
   if (b.hasAttribute('data-add')) {
-    escolherDaMemoria().then(r => { if (r && find(eq.id)) novoItem(eq, r.descricao, r.validade); });
+    escolherDaMemoria(eq).then(r => { if (r && find(eq.id)) novoItem(eq, r.descricao, r.validade, r.codigo); });
   } else if (b.dataset.addDesc) {
     const m = S.memoria.find(x => norm(x.descricao) === norm(b.dataset.addDesc));
     novoItem(eq, b.dataset.addDesc, m ? m.validade : 1);
@@ -1147,31 +1154,52 @@ function escolherEquipamento(titulo, opcoes) {
     lst.addEventListener('click', e => { const b = e.target.closest('[data-pick]'); if (b) fim(b.dataset.pick); });
   });
 }
-function escolherDaMemoria() {
-  const opt = m => `<div class="mrow" data-q="${esc(norm(m.descricao))}"><button class="mopt" data-pick data-desc="${esc(m.descricao)}" data-val="${m.validade}"><b>${esc(m.descricao)}</b> <span>validade ${m.validade} ${m.validade === 1 ? 'ano' : 'anos'}</span></button><button class="mx" data-esquecer="${esc(m.descricao)}" title="Tirar da memória" aria-label="Tirar da memória">×</button></div>`;
+// Janela "Adicionar item": código primeiro, depois a descrição (com sugestões da memória).
+function escolherDaMemoria(eq) {
   const mem = memoriaOrdenada();
-  const corpo = listaEscolha('Digite a descrição do item', `
-    <button class="mopt novo" data-pick data-novo hidden>+ Criar “<b></b>”</button>
-    ${mem.length ? mem.map(opt).join('') : '<p class="mdica">Os itens que você cadastrar aparecem aqui para adicionar com um toque.</p>'}
-    <button class="mopt branco" data-pick data-desc="">Item em branco</button>`);
-  return abrirModal('Adicionar item', corpo, [{label:'Cancelar', v:null}], fim => {
-    const {inp, lst} = ligarBusca(fim);
-    lst.dataset.criar = '';
-    lst.addEventListener('click', async e => {
+  const opt = m => `<div class="mrow" data-q="${esc(norm(m.descricao))}"><button class="mopt" data-pick data-desc="${esc(m.descricao)}" data-val="${m.validade}"><b>${esc(m.descricao)}</b> <span>validade ${m.validade} ${m.validade === 1 ? 'ano' : 'anos'}</span></button><button class="mx" data-esquecer="${esc(m.descricao)}" title="Tirar da memória" aria-label="Tirar da memória">×</button></div>`;
+  const corpo = `
+    <label class="mcampo"><span>Código</span><input id="niCod" autocomplete="off" placeholder="ex.: TC-01" value="${esc(proximoCodigo((eq.itens[eq.itens.length - 1] || {}).codigo || ''))}"></label>
+    <label class="mcampo"><span>Descrição</span><input id="niDesc" autocomplete="off" placeholder="Digite ou escolha da lista abaixo"></label>
+    <div class="mg">${mem.length ? 'Da memória' : ''}</div>
+    <div class="mlista">${mem.length ? mem.map(opt).join('') : '<p class="mdica">As descrições que você cadastrar aparecem aqui para escolher com um toque.</p>'}</div>`;
+  return abrirModal('Adicionar item', corpo, [{label:'Cancelar', v:null}, {label:'Adicionar', v:'ok', cls:'primary'}], fim => {
+    const cod = $('#niCod'), desc = $('#niDesc'), lst = $('#mbody .mlista');
+    let val = 1;
+    const filtrar = () => {
+      const q = norm(desc.value);
+      lst.querySelectorAll('[data-q]').forEach(el => { el.hidden = q && !el.dataset.q.includes(q); });
+      lst.querySelectorAll('.sel').forEach(el => el.classList.remove('sel'));
+      const m = S.memoria.find(x => norm(x.descricao) === q); val = m ? m.validade : val;
+    };
+    const concluir = () => fim({codigo: cod.value.trim(), descricao: desc.value.trim(), validade: val});
+    desc.addEventListener('input', filtrar);
+    cod.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); desc.focus(); } });
+    desc.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); concluir(); } });
+    lst.addEventListener('click', e => {
       const x = e.target.closest('[data-esquecer]');
-      if (x) {
-        const d = x.dataset.esquecer;
+      if (x) { // confirmação dentro da própria linha
+        const row = x.closest('.mrow'), d = x.dataset.esquecer;
+        row.dataset.html = row.innerHTML;
+        row.innerHTML = `<span class="mconf">Tirar “${esc(d)}” da memória?</span><button class="btn small" data-nao>Cancelar</button><button class="btn small perigo" data-sim>Tirar</button>`;
+        row.querySelector('[data-sim]').focus();
+        return;
+      }
+      if (e.target.closest('[data-nao]')) { const row = e.target.closest('.mrow'); row.innerHTML = row.dataset.html; return; }
+      if (e.target.closest('[data-sim]')) {
+        const row = e.target.closest('.mrow'), d = row.querySelector('.mconf').textContent.replace(/^Tirar “|” da memória\?$/g, '');
         S.memoria = S.memoria.filter(m => norm(m.descricao) !== norm(d)); save();
-        x.closest('.mrow').remove(); toast(`“${d}” saiu da memória`);
+        row.remove(); toast(`“${d}” saiu da memória`);
         return;
       }
       const b = e.target.closest('[data-pick]'); if (!b) return;
-      if (b.hasAttribute('data-novo')) fim({descricao: inp.value.trim(), validade: 1});
-      else fim({descricao: b.dataset.desc, validade: +b.dataset.val || 1});
+      desc.value = b.dataset.desc; val = +b.dataset.val || 1; filtrar(); b.closest('.mrow').classList.add('sel');
+      if (!cod.value.trim()) cod.focus(); else $('#mbtns .primary').focus();
     });
+    $('#mbtns').onclick = e => { const b = e.target.closest('[data-mb]'); if (!b) return; if (b.dataset.mb === '1') concluir(); else fim(null); };
+    cod.focus(); cod.select();
   });
 }
-
 /* ====== Exclusão com confirmação ====== */
 function pedirExclusaoEquipamento(id) {
   const eq = find(id); if (!eq) return;
