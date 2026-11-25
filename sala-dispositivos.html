@@ -112,7 +112,7 @@ body.sheet-open #map{padding-bottom:75vh}
 .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);pointer-events:none;padding:16px;font-size:15px}
 
 /* Painel */
-#panel{position:fixed;z-index:20;width:380px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);background:var(--surface);border:1px solid var(--line);
+#panel{position:fixed;z-index:20;width:430px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);background:var(--surface);border:1px solid var(--line);
   border-radius:12px;box-shadow:var(--shadow);display:flex;flex-direction:column}
 #panel[hidden]{display:none}
 #phead{display:flex;align-items:center;gap:8px;padding:10px 10px 10px 14px;border-bottom:1px solid var(--line);cursor:move;touch-action:none;user-select:none}
@@ -130,8 +130,16 @@ body.sheet-open #map{padding-bottom:75vh}
 .box h3 small{font-weight:400;color:var(--muted)}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .mini{display:flex;flex-direction:column;gap:2px;min-width:0}
-.item{border:1px solid var(--line);border-radius:8px;background:#fff;padding:8px;display:grid;grid-template-columns:1fr 1fr 30px;gap:6px 8px;align-items:end}
-.item .st{grid-column:1 / -1}
+.item{border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px 8px 8px;display:flex;flex-direction:column;gap:6px}
+.ih{display:flex;align-items:center;justify-content:space-between;font-size:12.5px}
+.ih .rm{width:28px;height:28px}
+.cal3{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:8px;align-items:end}
+.venc{display:block;border:1px dashed var(--line);border-radius:7px;padding:6px 8px;font-weight:650;font-variant-numeric:tabular-nums;background:#f6f7f4;white-space:nowrap}
+.mini input.miss{border-color:#e7b77a;background:#fffaf2}
+.st.miss{color:var(--warn)}
+.rmtxt{align-self:flex-end;border:0;background:transparent;color:var(--late);font-size:12.5px;padding:2px 0}
+.rmtxt:hover{text-decoration:underline}
+.box p.none{margin:0;font-size:12.5px;color:var(--muted)}
 .rm{border:0;background:transparent;color:var(--muted);font-size:18px;width:30px;height:30px;border-radius:6px;align-self:start}
 .rm:hover{background:var(--late-bg);color:var(--late)}
 .add{border:1px dashed #b7beb6;background:transparent;border-radius:8px;padding:6px;color:var(--acc);font-weight:600}
@@ -171,6 +179,7 @@ body.sheet-open #map{padding-bottom:75vh}
   #map{padding:16px 30px 30px 16px}
   .bar{padding:6px 12px}
   .tabs{flex-basis:100%}
+  .cal3{grid-template-columns:1fr 1fr}
   .tab{max-width:70vw}
   .tab .nm{overflow:hidden;text-overflow:ellipsis}
   .bar .lg{display:none}
@@ -284,11 +293,12 @@ function parseISO(s) {
   const o = {y:+m[1], m:+m[2], d:+m[3]};
   return (o.m >= 1 && o.m <= 12 && o.d >= 1 && o.d <= daysIn(o.y, o.m)) ? o : null;
 }
+// Vencimento = data de calibração + 365 dias por ano de validade.
 function vencimento(cal, anos) {
   const p = parseISO(cal); if (!p) return null;
-  const y = p.y + ([1,2,3].includes(+anos) ? +anos : 1);
-  let d = p.d; if (p.m === 2 && d === 29 && !leap(y)) d = 28;
-  return {y, m:p.m, d};
+  const n = [1,2,3].includes(+anos) ? +anos : 1;
+  const t = new Date(Date.UTC(p.y, p.m - 1, p.d) + n * 365 * 864e5);
+  return {y:t.getUTCFullYear(), m:t.getUTCMonth() + 1, d:t.getUTCDate()};
 }
 const dnum = o => Date.UTC(o.y, o.m - 1, o.d) / 864e5;
 function hoje() { const t = new Date(); return {y:t.getFullYear(), m:t.getMonth() + 1, d:t.getDate()}; }
@@ -463,6 +473,7 @@ function cellSize() {
 function matchEq(eq, q) {
   if (/^vencid/.test(q)) return todosItens(eq).some(i => { const s = situacao(i.cal, i.val); return s && s.k === 'late'; });
   if (q === 'a vencer' || q === 'vencer' || q === 'vence hoje') return todosItens(eq).some(i => { const s = situacao(i.cal, i.val); return s && (s.k === 'soon' || s.k === 'today'); });
+  if (q === 'sem data') return todosItens(eq).some(i => !parseISO(i.cal));
   const hay = [eq.codigo, eq.descricao, eq.anotacao];
   const data = (c, v) => { const ve = vencimento(c, v); if (ve) hay.push(fmt(ve)); };
   data(eq.calibracao, eq.validade);
@@ -533,15 +544,16 @@ function renderTabs() {
   document.querySelector('[data-size="r-"]').disabled = atual.rows <= 2;
 }
 function resumo() {
-  let late = 0, soon = 0, n = R().equipamentos.length;
+  let late = 0, soon = 0, miss = 0, n = R().equipamentos.length;
   for (const eq of R().equipamentos) for (const i of todosItens(eq)) {
-    const s = situacao(i.cal, i.val); if (!s) continue;
+    const s = situacao(i.cal, i.val); if (!s) { miss++; continue; }
     if (s.k === 'late') late++; else if (s.k !== 'ok') soon++;
   }
   const el = $('#summary');
   el.innerHTML = `<span>${n} ${n === 1 ? 'equipamento' : 'equipamentos'}</span>` +
     (late ? `<button class="pill late" data-q="vencido" title="Mostrar no mapa">${late} ${late === 1 ? 'vencido' : 'vencidos'}</button>` : '') +
-    (soon ? `<button class="pill soon" data-q="a vencer" title="Mostrar no mapa">${soon} a vencer em ${AVISO_DIAS} dias</button>` : '');
+    (soon ? `<button class="pill soon" data-q="a vencer" title="Mostrar no mapa">${soon} a vencer em ${AVISO_DIAS} dias</button>` : '') +
+    (miss ? `<button class="pill" data-q="sem data" title="Itens sem data de calibração">${miss} sem data</button>` : '');
 }
 
 /* ====== Interação no mapa ====== */
@@ -720,45 +732,51 @@ layer.addEventListener('keydown', e => {
 const optsValidade = v => [1,2,3].map(n => `<option value="${n}"${+v === n ? ' selected' : ''}>${n} ${n === 1 ? 'ano' : 'anos'}</option>`).join('');
 function stHTML(cal, val) {
   const s = situacao(cal, val);
-  if (!s) return {cls:'', html:'Sem data de calibração'};
-  const quando = s.k === 'late' ? 'venceu' : 'vence';
-  return {cls:s.k, html:`<b>${esc(textoPainel(s))}</b> · ${quando} ${fmt(s.v)}`};
+  if (!s) return {cls:'miss', html:'Informe a data de calibração', venc:'—'};
+  return {cls:s.k, html:`<b>${esc(textoPainel(s))}</b>`, venc:fmt(s.v)};
 }
-function itemHTML(kind, it) {
-  const extra = kind === 'relogios' ? ['resolucao', 'Resolução', 'ex.: 0,01 mm'] : ['medida', 'Medida', 'ex.: Ø 10 H7'];
-  const st = stHTML(it.calibracao, it.validade);
+function calHTML(attr, key, cal, val) {
+  const st = stHTML(cal, val);
+  return `<div class="cal3">
+      <label class="mini"><span>Data de calibração</span><input type="date" ${attr}="calibracao" value="${esc(cal)}" class="${cal ? '' : 'miss'}"></label>
+      <label class="mini"><span>Validade</span><select ${attr}="validade">${optsValidade(val)}</select></label>
+      <div class="mini"><span>Vencimento</span><output class="venc" data-venc="${esc(key)}">${st.venc}</output></div>
+    </div>
+    <div class="st ${st.cls}" data-st="${esc(key)}">${st.html}</div>`;
+}
+function itemHTML(kind, it, i) {
+  const rel = kind === 'relogios';
+  const extra = rel ? ['resolucao', 'Resolução', 'ex.: 0,01 mm'] : ['medida', 'Medida', 'ex.: Ø 10 H7'];
   return `<div class="item" data-list="${kind}" data-iid="${esc(it.id)}">
-    <label class="mini"><span>Código</span><input data-if="codigo" value="${esc(it.codigo)}" autocomplete="off"></label>
-    <label class="mini"><span>${extra[1]}</span><input data-if="${extra[0]}" value="${esc(it[extra[0]])}" placeholder="${extra[2]}" autocomplete="off"></label>
-    <button class="rm" data-rm title="Remover" aria-label="Remover">×</button>
-    <label class="mini"><span>Data de calibração</span><input type="date" data-if="calibracao" value="${esc(it.calibracao)}"></label>
-    <label class="mini"><span>Validade</span><select data-if="validade">${optsValidade(it.validade)}</select></label>
-    <span></span>
-    <div class="st ${st.cls}" data-st="${esc(it.id)}">${st.html}</div>
+    ${rel ? '' : `<div class="ih"><b>P/NP ${i + 1}</b><button class="rm" data-rm title="Remover este P/NP" aria-label="Remover este P/NP">×</button></div>`}
+    <div class="row2">
+      <label class="mini"><span>Código</span><input data-if="codigo" value="${esc(it.codigo)}" autocomplete="off"></label>
+      <label class="mini"><span>${extra[1]}</span><input data-if="${extra[0]}" value="${esc(it[extra[0]])}" placeholder="${extra[2]}" autocomplete="off"></label>
+    </div>
+    ${calHTML('data-if', it.id, it.calibracao, it.validade)}
+    ${rel ? '<button class="rmtxt" data-rm>Remover relógio</button>' : ''}
   </div>`;
 }
 function buildPanel() {
   const eq = find(openId); if (!eq) return;
-  const st = stHTML(eq.calibracao, eq.validade);
   pbody.innerHTML = `
-    <label class="f"><span>Código Equipamento</span><input data-f="codigo" value="${esc(eq.codigo)}" autocomplete="off"></label>
-    <label class="f"><span>Descrição</span><input data-f="descricao" value="${esc(eq.descricao)}" autocomplete="off"></label>
-    <div class="box">
-      <h3>Calibração do equipamento</h3>
-      <div class="row2">
-        <label class="mini"><span>Data de calibração</span><input type="date" data-f="calibracao" value="${esc(eq.calibracao)}"></label>
-        <label class="mini"><span>Validade</span><select data-f="validade">${optsValidade(eq.validade)}</select></label>
-      </div>
-      <div class="st ${st.cls}" data-st="eq">${st.html}</div>
+    <div class="row2">
+      <label class="f"><span>Código Equipamento</span><input data-f="codigo" value="${esc(eq.codigo)}" placeholder="ex.: DC 250" autocomplete="off"></label>
+      <label class="f"><span>Descrição</span><input data-f="descricao" value="${esc(eq.descricao)}" placeholder="ex.: Aro LE / LD" autocomplete="off"></label>
     </div>
     <div class="box">
-      <h3>Relógios comparadores <small>${eq.relogios.length || ''}</small></h3>
-      ${eq.relogios.map(r => itemHTML('relogios', r)).join('')}
-      <button class="add" data-add="relogios">+ Adicionar relógio comparador</button>
+      <h3>Calibração do dispositivo</h3>
+      ${calHTML('data-f', 'eq', eq.calibracao, eq.validade)}
     </div>
     <div class="box">
-      <h3>P/NP <small>${eq.pnps.length || ''}</small></h3>
-      ${eq.pnps.map(p => itemHTML('pnps', p)).join('')}
+      <h3>Relógio comparador <small>opcional · no máximo 1</small></h3>
+      ${eq.relogios.map((r, i) => itemHTML('relogios', r, i)).join('')}
+      ${eq.relogios.length ? '' : '<p class="none">Este dispositivo não tem relógio comparador.</p><button class="add" data-add="relogios">+ Adicionar relógio comparador</button>'}
+    </div>
+    <div class="box">
+      <h3>P/NP <small>opcional · ${eq.pnps.length === 1 ? '1 cadastrado' : eq.pnps.length + ' cadastrados'}</small></h3>
+      ${eq.pnps.map((p, i) => itemHTML('pnps', p, i)).join('')}
+      ${eq.pnps.length ? '' : '<p class="none">Este dispositivo não tem P/NP.</p>'}
       <button class="add" data-add="pnps">+ Adicionar P/NP</button>
     </div>
     <label class="f"><span>Anotação</span><textarea data-f="anotacao" rows="3">${esc(eq.anotacao)}</textarea></label>
@@ -769,11 +787,15 @@ function buildPanel() {
 }
 function updStatus() {
   const eq = find(openId); if (!eq) return;
-  const set = (el, cal, val) => { const st = stHTML(cal, val); el.className = 'st ' + st.cls; el.innerHTML = st.html; };
+  const its = {eq: {calibracao:eq.calibracao, validade:eq.validade}};
+  for (const i of [...eq.relogios, ...eq.pnps]) its[i.id] = i;
   pbody.querySelectorAll('[data-st]').forEach(el => {
-    const k = el.dataset.st;
-    if (k === 'eq') return set(el, eq.calibracao, eq.validade);
-    const it = [...eq.relogios, ...eq.pnps].find(i => i.id === k); if (it) set(el, it.calibracao, it.validade);
+    const it = its[el.dataset.st]; if (!it) return;
+    const st = stHTML(it.calibracao, it.validade);
+    el.className = 'st ' + st.cls; el.innerHTML = st.html;
+    const box = el.previousElementSibling;
+    box.querySelector('.venc').textContent = st.venc;
+    box.querySelector('input[type="date"]').classList.toggle('miss', !it.calibracao);
   });
   $('#ptitle').textContent = eq.codigo ? `Equipamento ${eq.codigo}` : 'Novo equipamento';
 }
@@ -881,6 +903,7 @@ pbody.addEventListener('click', e => {
   const eq = find(openId); if (!eq) return;
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.add) {
+    if (b.dataset.add === 'relogios' && eq.relogios.length) return;
     snap();
     const it = {id: uid(), codigo:'', calibracao:'', validade:1};
     it[b.dataset.add === 'relogios' ? 'resolucao' : 'medida'] = '';
