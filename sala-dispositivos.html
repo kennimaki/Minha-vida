@@ -835,8 +835,19 @@ $('#bUndo').addEventListener('click', undo);
 $('#bSave').addEventListener('click', () => {
   const d = new Date(), stamp = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
   const slug = norm(S.sala.nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'sala';
-  const blob = new Blob([JSON.stringify({app:'sala-dispositivos', salvoEm:d.toISOString(), ...S}, null, 2)], {type:'application/json'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${slug}-${stamp}.json`;
+  const nome = `${slug}-${stamp}.json`;
+  const json = JSON.stringify({app:'sala-dispositivos', salvoEm:d.toISOString(), ...S}, null, 2);
+  if (downloadsP) { // Página publicada no claude.ai: o download passa pelo próprio claude.ai.
+    downloadsP.then(dl => {
+      if (!dl) return toast('Não foi possível salvar o arquivo nesta tela.', {error:true});
+      return dl.save({filename:nome, data:json}).then(
+        () => toast('Cópia salva. Guarde o arquivo em um lugar seguro.'),
+        err => { if (err && err.code !== 'declined') toast('A cópia não foi salva. Tente de novo em um navegador.', {error:true}); });
+    });
+    return;
+  }
+  const blob = new Blob([json], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   toast('Cópia salva. Guarde o arquivo em um lugar seguro.');
 });
@@ -889,6 +900,10 @@ function toast(msg, o = {}) {
 $('#hint').textContent = coarse
   ? 'Toque em um espaço vazio para criar. Toque em um equipamento para editar. Segure e arraste para mover. Puxe o canto para mudar o tamanho.'
   : 'Clique em um espaço vazio para criar. Clique em um equipamento para editar. Arraste para mover (sobre outro do mesmo tamanho, troca de lugar). Puxe o canto para mudar o tamanho. Puxe a borda da sala para aumentá-la.';
+// Dentro do claude.ai não há impressão nem download direto; o download usa o recurso do próprio claude.ai.
+const noClaude = !!(window.claude && window.claude.use);
+const downloadsP = noClaude ? window.claude.use('downloads').catch(() => null) : null;
+if (noClaude) $('#bPrint').hidden = true;
 S = load();
 render();
 let rT; addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() => { if (gesture) return; render(); if (openId) { const id = openId; layer.querySelector(`[data-id="${CSS.escape(id)}"]`)?.classList.add('sel'); placePanel(); } }, 120); });
