@@ -215,6 +215,7 @@ body.sheet-open #map{padding-bottom:75vh}
 .danger:hover{background:var(--late-bg)}
 #panel.sheet{left:0!important;right:0;bottom:0;top:auto!important;width:100%;max-width:none;max-height:72vh;border-radius:16px 16px 0 0;
   padding-bottom:env(safe-area-inset-bottom)}
+#panel.sheet.teclado{border-radius:12px 12px 0 0;padding-bottom:0}
 #panel.sheet #phead{cursor:default}
 #panel.sheet #phead::before{content:"";position:absolute;left:50%;top:4px;width:40px;height:4px;margin-left:-20px;border-radius:2px;background:#d0d5ce}
 
@@ -949,7 +950,7 @@ function closePanel() {
   if (!openId) return;
   const ae = document.activeElement; if (ae && panel.contains(ae)) ae.blur();
   fecharSugestoes();
-  const id = openId; openId = null; lastKey = null; panel.hidden = true;
+  const id = openId; openId = null; lastKey = null; panel.hidden = true; ajustarTeclado();
   document.body.classList.remove('sheet-open');
   if (novo && novo.id === id) {
     // Equipamento recém-criado e deixado em branco: a criação é cancelada.
@@ -1181,6 +1182,35 @@ function escolherEquipamento(titulo, opcoes) {
     lst.addEventListener('click', e => { const b = e.target.closest('[data-pick]'); if (b) fim(b.dataset.pick); });
   });
 }
+/* ====== Celular: painel acima do teclado ======
+   Quando o teclado abre, a área visível (visualViewport) encolhe. O painel passa a ocupar essa área
+   e o campo em edição é rolado para o centro, para a pessoa ver o que digita. */
+function ajustarTeclado() {
+  const vv = window.visualViewport;
+  const sheet = !panel.hidden && panel.classList.contains('sheet');
+  const alto = document.documentElement.clientHeight;
+  const teclado = vv && sheet ? alto - vv.height > 120 : false;
+  panel.classList.toggle('teclado', teclado);
+  if (!teclado) { panel.style.removeProperty('top'); panel.style.removeProperty('max-height'); }
+  else {
+    panel.style.setProperty('max-height', Math.round(vv.height - 8) + 'px', 'important');
+    panel.style.setProperty('top', Math.round(vv.offsetTop + vv.height - panel.offsetHeight) + 'px', 'important');
+  }
+  const a = document.activeElement;
+  if (sheet && a && pbody.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) {
+    const r = a.getBoundingClientRect(), pb = pbody.getBoundingClientRect();
+    const alvo = pb.top + Math.min(pb.height * 0.35, 120);
+    if (r.top < pb.top + 8 || r.bottom > pb.bottom - 8 || Math.abs(r.top - alvo) > pb.height * 0.4) pbody.scrollTop += r.top - alvo;
+    if (sugInp === a) mostrarSugestoes(a);
+  }
+}
+if (window.visualViewport) {
+  let vvT; const f = () => { clearTimeout(vvT); vvT = setTimeout(ajustarTeclado, 60); };
+  visualViewport.addEventListener('resize', f); visualViewport.addEventListener('scroll', f);
+}
+// O teclado leva um instante para abrir; ajusta logo e de novo depois da animação.
+pbody.addEventListener('focusin', () => { if (!panel.classList.contains('sheet')) return; setTimeout(ajustarTeclado, 50); setTimeout(ajustarTeclado, 350); });
+
 /* ====== Sugestões da memória no campo Descrição do item ====== */
 const sugest = $('#sugest');
 let sugInp = null, sugSel = -1;
