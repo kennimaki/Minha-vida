@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f2f3ef">
+<title>Sala de Dispositivos</title>
+<style>
+:root{
+  --bg:#f2f3ef;--surface:#fff;--ink:#1d2421;--muted:#65706a;--line:#d6dbd4;--grid:#e3e7e1;
+  --acc:#2f6b55;--acc-ink:#fff;--focus:#1f5fbf;
+  --warn:#b45f00;--warn-bg:#ffedd5;--late:#c22727;--late-bg:#fde4e4;--okc:#2e7d4f;
+  --shadow:0 10px 30px rgba(20,30,25,.20),0 2px 6px rgba(20,30,25,.10);
+  color-scheme:light;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;overflow:hidden;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+/* Cabeçalho */
+header{background:var(--surface);border-bottom:1px solid var(--line);padding:8px 16px 10px;display:flex;flex-direction:column;gap:6px}
+header .top{display:flex;align-items:center;gap:8px 14px;min-height:36px;flex-wrap:wrap}
+header .top .status{margin-left:auto}
+#roomName{font-size:18px;font-weight:650;border:1px solid transparent;border-radius:6px;padding:4px 6px;margin-left:-6px;background:transparent;min-width:0;width:min(320px,100%)}
+#roomName:hover{border-color:var(--line)}
+#roomName:focus{border-color:var(--acc);outline:none;background:#fff}
+.summary{display:flex;gap:6px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:13px}
+.pill{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 10px;font-size:12.5px}
+.pill.late{color:var(--late);border-color:#f0b4b4;background:var(--late-bg);font-weight:600}
+.pill.soon{color:var(--warn);border-color:#f3c98f;background:var(--warn-bg);font-weight:600}
+.tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.searchbox{position:relative;display:flex;align-items:center}
+#q{border:1px solid var(--line);border-radius:8px;padding:7px 30px 7px 10px;width:250px;background:#fff}
+#q:focus{border-color:var(--acc);outline:none}
+#qclear{position:absolute;right:4px;border:0;background:transparent;font-size:16px;color:var(--muted);width:24px;height:24px;border-radius:4px}
+#qcount{font-size:12.5px;color:var(--muted);min-width:0}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 11px;white-space:nowrap}
+.btn:hover{background:#f6f7f4;border-color:#c3c9c1}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
+.btn.primary:hover{background:#265a47}
+.status{font-size:12px;color:var(--muted)}
+.status.err{color:var(--late);font-weight:600}
+.hint{padding:6px 16px;font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--line);background:#f8f9f6}
+
+/* Mapa */
+#map{flex:1;overflow:auto;padding:24px 32px 32px 24px;position:relative;-webkit-overflow-scrolling:touch}
+body.sheet-open #map{padding-bottom:75vh}
+#room{position:relative;margin:0 auto;background-color:#fff;border:1px solid #c9cfc7;
+  background-image:linear-gradient(to right,var(--grid) 1px,transparent 1px),linear-gradient(to bottom,var(--grid) 1px,transparent 1px);
+  box-shadow:0 1px 2px rgba(0,0,0,.05);-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+#eqs{position:absolute;inset:0}
+.eq{position:absolute;border-radius:6px;border:1.5px solid var(--bd);background:var(--fill);padding:3px 6px;overflow:hidden;cursor:grab;
+  touch-action:pan-x pan-y;font-size:12px;line-height:15px;transition:opacity .12s,box-shadow .12s}
+.eq:hover{box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.eq .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eq .code{font-weight:650;font-size:12.5px;padding-right:8px}
+.eq .code .none{font-weight:400;color:var(--muted);font-style:italic}
+.eq .desc{color:#36403b}
+.eq .it{color:#4f5a54;font-size:11.5px}
+.eq .more{color:var(--muted);font-size:11px}
+.w{display:inline-block;border-radius:4px;padding:0 5px;font-size:11px;font-weight:650;line-height:15px}
+.w.soon,.w.today{background:var(--warn-bg);color:var(--warn)}
+.w.late{background:var(--late-bg);color:var(--late)}
+.flag{position:absolute;top:4px;right:4px;width:9px;height:9px;border-radius:50%;border:1.5px solid #fff}
+.flag.soon,.flag.today{background:var(--warn)} .flag.late{background:var(--late)}
+.rz{position:absolute;right:0;bottom:0;width:16px;height:16px;cursor:nwse-resize;touch-action:none;
+  background:linear-gradient(135deg,transparent 55%,var(--bd) 55%,var(--bd) 65%,transparent 65%,transparent 75%,var(--bd) 75%,var(--bd) 85%,transparent 85%)}
+.eq.dim{opacity:.22}
+.eq.hit{box-shadow:0 0 0 3px var(--focus)}
+.eq.sel{box-shadow:0 0 0 2px var(--ink)}
+.eq.dragging{opacity:.35}
+.eq.flash{animation:flash .9s ease 2}
+@keyframes flash{50%{box-shadow:0 0 0 6px var(--focus)}}
+#ghost,#hover{position:absolute;border-radius:6px;pointer-events:none;display:none}
+#ghost{border:2px dashed var(--acc);background:rgba(47,107,85,.12)}
+#ghost.swap{border-color:var(--focus);background:rgba(31,95,191,.12)}
+#ghost.bad{border-color:var(--late);background:rgba(194,39,39,.10)}
+#hover{border:1.5px dashed #9aa59d;color:#7d8881;align-items:center;justify-content:center;font-size:20px;font-weight:300}
+.edge{position:absolute;touch-action:none;z-index:2}
+.edge.r{top:0;right:-14px;width:12px;height:100%;cursor:ew-resize}
+.edge.b{left:0;bottom:-14px;height:12px;width:100%;cursor:ns-resize}
+.edge.c{right:-16px;bottom:-16px;width:18px;height:18px;cursor:nwse-resize}
+.edge::after{content:"";position:absolute;background:#c3cac2;border-radius:3px;transition:background .15s}
+.edge.r::after{left:4px;top:50%;width:4px;height:36px;margin-top:-18px}
+.edge.b::after{top:4px;left:50%;height:4px;width:36px;margin-left:-18px}
+.edge.c::after{inset:4px;border-radius:50%}
+.edge:hover::after,.edge.on::after{background:var(--acc)}
+#sizeTag{position:absolute;right:0;bottom:-38px;background:var(--ink);color:#fff;font-size:12px;padding:2px 8px;border-radius:4px;display:none;white-space:nowrap}
+.empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);pointer-events:none;padding:16px;font-size:15px}
+
+/* Painel */
+#panel{position:fixed;z-index:20;width:380px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);background:var(--surface);border:1px solid var(--line);
+  border-radius:12px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+#panel[hidden]{display:none}
+#phead{display:flex;align-items:center;gap:8px;padding:10px 10px 10px 14px;border-bottom:1px solid var(--line);cursor:move;touch-action:none;user-select:none}
+#ptitle{font-weight:650;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#pclose{border:0;background:transparent;font-size:22px;line-height:1;width:32px;height:32px;border-radius:6px;color:var(--muted)}
+#pclose:hover{background:#eef0ec;color:var(--ink)}
+#pbody{overflow:auto;padding:12px 14px 14px;display:flex;flex-direction:column;gap:12px;overscroll-behavior:contain}
+.f{display:flex;flex-direction:column;gap:3px}
+.f>span,.mini>span{font-size:12px;color:var(--muted);font-weight:550}
+.f input,.f textarea,.mini input,.mini select,.f select{border:1px solid var(--line);border-radius:7px;padding:6px 8px;background:#fff;width:100%;min-width:0}
+.f input:focus,.f textarea:focus,.mini input:focus,.mini select:focus,.f select:focus{border-color:var(--acc);outline:none;box-shadow:0 0 0 2px rgba(47,107,85,.15)}
+.f textarea{resize:vertical;min-height:58px}
+.box{border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;background:#fafbf9}
+.box h3{margin:0;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+.box h3 small{font-weight:400;color:var(--muted)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mini{display:flex;flex-direction:column;gap:2px;min-width:0}
+.item{border:1px solid var(--line);border-radius:8px;background:#fff;padding:8px;display:grid;grid-template-columns:1fr 1fr 30px;gap:6px 8px;align-items:end}
+.item .st{grid-column:1 / -1}
+.rm{border:0;background:transparent;color:var(--muted);font-size:18px;width:30px;height:30px;border-radius:6px;align-self:start}
+.rm:hover{background:var(--late-bg);color:var(--late)}
+.add{border:1px dashed #b7beb6;background:transparent;border-radius:8px;padding:6px;color:var(--acc);font-weight:600}
+.add:hover{background:#eef4f0}
+.st{font-size:12.5px;color:var(--muted)}
+.st b{font-weight:650}
+.st.ok b{color:var(--okc)} .st.soon b,.st.today b{color:var(--warn)} .st.late b{color:var(--late)}
+.cores{display:flex;gap:8px;flex-wrap:wrap}
+.sw{width:32px;height:32px;border-radius:50%;border:2px solid var(--bd);background:var(--fill);position:relative}
+.sw[aria-pressed="true"]::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--ink)}
+.danger{border:1px solid #efc1c1;color:var(--late);background:#fff;border-radius:8px;padding:7px 10px;align-self:flex-start}
+.danger:hover{background:var(--late-bg)}
+#panel.sheet{left:0!important;right:0;bottom:0;top:auto!important;width:100%;max-width:none;max-height:72vh;border-radius:16px 16px 0 0;
+  padding-bottom:env(safe-area-inset-bottom)}
+#panel.sheet #phead{cursor:default}
+#panel.sheet #phead::before{content:"";position:absolute;left:50%;top:4px;width:40px;height:4px;margin-left:-20px;border-radius:2px;background:#d0d5ce}
+
+#toast{position:fixed;left:50%;bottom:20px;transform:translate(-50%,40px);opacity:0;pointer-events:none;background:var(--ink);color:#fff;border-radius:10px;
+  padding:10px 14px;display:flex;gap:14px;align-items:center;z-index:40;transition:.2s;max-width:calc(100vw - 32px);box-shadow:var(--shadow)}
+#toast.show{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+#toast.err{background:var(--late)}
+#toast button{border:0;background:transparent;color:#9fe0c2;font-weight:700;padding:0}
+#toast.err button{color:#fff;text-decoration:underline}
+#printhead{display:none}
+
+@media (pointer:coarse){.eq .rz{width:24px;height:24px}.edge.r{width:20px;right:-22px}.edge.b{height:20px;bottom:-22px}.edge.c{width:26px;height:26px;right:-26px;bottom:-26px}}
+@media (max-width:700px){
+  header{padding:8px 12px}
+  header .top .status:not(.err){display:none}
+  .tools .lg{display:none}
+  .tools{gap:5px}
+  .btn{padding:6px 9px}
+  #roomName{font-size:17px}
+  #panel.sheet{max-height:62vh}
+  .searchbox{flex:1 1 100%} #q{width:100%}
+  input,select,textarea{font-size:16px!important}
+  #map{padding:16px 30px 30px 16px}
+  .hint{padding:6px 12px}
+}
+@media print{
+  @page{size:A4 landscape;margin:10mm}
+  html,body{height:auto;overflow:visible;background:#fff;display:block;padding:0}
+  header,.hint,#panel,#toast,.edge,.rz,#ghost,#hover,#sizeTag,.empty{display:none!important}
+  #printhead{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 6px;font-size:12px}
+  #printhead h1{font-size:16px;margin:0}
+  #map{overflow:visible;padding:0}
+  #room{margin:0;box-shadow:none}
+  .eq,.w,.flag,#room{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .eq{box-shadow:none!important;opacity:1!important}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <input id="roomName" aria-label="Nome da sala" maxlength="80" spellcheck="false">
+    <div class="summary" id="summary"></div>
+    <span class="status" id="status"></span>
+  </div>
+  <div class="tools">
+    <div class="searchbox">
+      <input id="q" type="search" placeholder="Buscar código, item, data ou “vencido”" aria-label="Buscar" autocomplete="off">
+      <button id="qclear" title="Limpar busca" aria-label="Limpar busca" hidden>×</button>
+    </div>
+    <span id="qcount"></span>
+    <button class="btn" id="bUndo" title="Desfazer (Ctrl+Z)" disabled>↶ Desfazer</button>
+    <button class="btn" id="bSave" title="Baixar um arquivo .json com todo o cadastro">Salvar<span class="lg"> cópia</span></button>
+    <button class="btn" id="bOpen" title="Abrir um arquivo .json salvo antes">Abrir<span class="lg"> cópia</span></button>
+    <button class="btn" id="bPrint">Imprimir</button>
+    <input type="file" id="file" accept=".json,application/json" hidden>
+  </div>
+</header>
+<div class="hint" id="hint"></div>
+<main id="map">
+  <div id="printhead"><h1 id="phName"></h1><span id="phInfo"></span></div>
+  <div id="room">
+    <div id="hover">+</div>
+    <div id="eqs"></div>
+    <div id="ghost"></div>
+    <div class="edge r" data-edge="r" title="Arraste para mudar a largura da sala"></div>
+    <div class="edge b" data-edge="b" title="Arraste para mudar a altura da sala"></div>
+    <div class="edge c" data-edge="c" title="Arraste para mudar o tamanho da sala"></div>
+    <div id="sizeTag"></div>
+  </div>
+</main>
+
+<div id="panel" role="dialog" aria-labelledby="ptitle" hidden>
+  <div id="phead"><span id="ptitle">Equipamento</span><button id="pclose" aria-label="Fechar" title="Fechar (Esc)">×</button></div>
+  <div id="pbody"></div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* ====== Configuração ====== */
+const KEY = 'sala-dispositivos.v1';
+const MAX = 60, UNDO_MAX = 100, AVISO_DIAS = 30;
+const COLORS = [
+  {id:'cinza',   nome:'Cinza',   fill:'#f3f4f2', bd:'#b3bab4'},
+  {id:'azul',    nome:'Azul',    fill:'#dbe9fb', bd:'#7aa3d4'},
+  {id:'verde',   nome:'Verde',   fill:'#dbf0e1', bd:'#73b588'},
+  {id:'amarelo', nome:'Amarelo', fill:'#fbf0c4', bd:'#cfb24a'},
+  {id:'roxo',    nome:'Roxo',    fill:'#ebe1f8', bd:'#a487cf'},
+  {id:'rosa',    nome:'Rosa',    fill:'#f9dfea', bd:'#d088a5'},
+];
+const colorOf = id => COLORS.find(c => c.id === id) || COLORS[0];
+
+const $ = s => document.querySelector(s);
+const mapEl = $('#map'), room = $('#room'), layer = $('#eqs'), ghost = $('#ghost'), hoverEl = $('#hover');
+const panel = $('#panel'), pbody = $('#pbody'), qEl = $('#q');
+const coarse = matchMedia('(pointer:coarse)').matches;
+const narrowMQ = matchMedia('(max-width:700px)');
+
+let S, openId = null, gesture = null, frozenS = 0, printS = 0, curS = 40, query = '';
+const undoStack = []; let lastKey = null;
+
+/* ====== Utilidades ====== */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const find = id => S.equipamentos.find(e => e.id === id);
+const overlap = (o, x, y, w, h) => x < o.x + o.w && o.x < x + w && y < o.y + o.h && o.y < y + h;
+
+/* ====== Datas e calibração ====== */
+const leap = y => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+const daysIn = (y, m) => [31, leap(y) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1];
+function parseISO(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); if (!m) return null;
+  const o = {y:+m[1], m:+m[2], d:+m[3]};
+  return (o.m >= 1 && o.m <= 12 && o.d >= 1 && o.d <= daysIn(o.y, o.m)) ? o : null;
+}
+function vencimento(cal, anos) {
+  const p = parseISO(cal); if (!p) return null;
+  const y = p.y + ([1,2,3].includes(+anos) ? +anos : 1);
+  let d = p.d; if (p.m === 2 && d === 29 && !leap(y)) d = 28;
+  return {y, m:p.m, d};
+}
+const dnum = o => Date.UTC(o.y, o.m - 1, o.d) / 864e5;
+function hoje() { const t = new Date(); return {y:t.getFullYear(), m:t.getMonth() + 1, d:t.getDate()}; }
+function situacao(cal, anos) {
+  const v = vencimento(cal, anos); if (!v) return null;
+  const n = Math.round(dnum(v) - dnum(hoje()));
+  return {n, v, k: n > AVISO_DIAS ? 'ok' : n > 0 ? 'soon' : n === 0 ? 'today' : 'late'};
+}
+const p2 = n => String(n).padStart(2, '0');
+const fmt = o => `${p2(o.d)}/${p2(o.m)}/${o.y}`;
+const fmtCurto = o => `${p2(o.d)}/${p2(o.m)}`;
+function textoPainel(s) {
+  if (s.k === 'ok') return 'Em dia';
+  if (s.k === 'soon') return s.n === 1 ? 'Falta 1 dia' : `Faltam ${s.n} dias`;
+  if (s.k === 'today') return 'Vence hoje';
+  return -s.n === 1 ? 'Vencido há 1 dia' : `Vencido há ${-s.n} dias`;
+}
+function textoMapa(s) { return s.k === 'soon' ? `Vence ${fmtCurto(s.v)}` : s.k === 'today' ? 'Vence hoje' : 'Vencido'; }
+
+function todosItens(eq) {
+  return [
+    {label:'Equipamento', cal:eq.calibracao, val:eq.validade},
+    ...eq.relogios.map(r => ({label:'Relógio ' + (r.codigo || 'sem código'), cal:r.calibracao, val:r.validade})),
+    ...eq.pnps.map(p => ({label:'P/NP ' + (p.codigo || 'sem código'), cal:p.calibracao, val:p.validade})),
+  ];
+}
+function avisos(eq) {
+  return todosItens(eq).map(i => ({label:i.label, s:situacao(i.cal, i.val)}))
+    .filter(a => a.s && a.s.k !== 'ok').sort((a, b) => a.s.n - b.s.n);
+}
+
+/* ====== Dados: carregar, validar, converter ====== */
+function blank() { return {versao:2, sala:{nome:'Sala de dispositivos', cols:16, rows:10}, equipamentos:[]}; }
+function str(v) { return v == null ? '' : (typeof v === 'object' ? '' : String(v)).trim(); }
+function int(v, def) { if (v == null || v === '' || typeof v === 'boolean') return def; const n = Number(v); return Number.isFinite(n) ? Math.round(n) : def; }
+function isoDe(v) {
+  if (v == null || v === '') return '';
+  const s = String(v).trim();
+  let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (m) { const iso = `${m[1]}-${m[2]}-${m[3]}`; return parseISO(iso) ? iso : ''; }
+  m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s);
+  if (m) { const iso = `${m[3]}-${p2(m[2])}-${p2(m[1])}`; return parseISO(iso) ? iso : ''; }
+  return '';
+}
+const validadeDe = v => { const n = int(v, 1); return [1,2,3].includes(n) ? n : 1; };
+function lista(v) { if (Array.isArray(v)) return v; if (v == null || v === '') return []; return [v]; }
+const pick = (o, ...ks) => { for (const k of ks) if (o[k] != null && o[k] !== '') return o[k]; return undefined; };
+
+function normalize(d) {
+  if (!d || typeof d !== 'object') throw new Error('O arquivo não contém dados da sala.');
+  let list, sala = {};
+  if (Array.isArray(d)) list = d;
+  else {
+    list = pick(d, 'equipamentos', 'equipments', 'dispositivos', 'itens', 'items');
+    sala = (d.sala && typeof d.sala === 'object') ? d.sala : (d.room && typeof d.room === 'object' ? d.room : {});
+    if (list === undefined && Array.isArray(sala.equipamentos)) list = sala.equipamentos;
+    if (list === undefined && (d.sala || d.versao)) list = [];
+  }
+  if (!Array.isArray(list)) throw new Error('O arquivo não tem a lista de equipamentos.');
+  let cols = clamp(int(pick(sala, 'cols', 'colunas', 'largura'), 16), 2, MAX);
+  let rows = clamp(int(pick(sala, 'rows', 'linhas', 'altura'), 10), 2, MAX);
+  const out = {versao:2, sala:{nome: str(pick(sala, 'nome', 'name') ?? d.nome) || 'Sala de dispositivos', cols, rows}, equipamentos:[]};
+  const ids = new Set();
+  const novoId = v => { let id = str(v); if (!id || ids.has(id)) id = uid(); ids.add(id); return id; };
+
+  const eqs = list.map((raw, i) => {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error(`O item ${i + 1} da lista não é um equipamento válido.`);
+    const notas = [str(pick(raw, 'anotacao', 'anotação', 'observacao', 'observação', 'obs', 'notas', 'nota'))].filter(Boolean);
+    const cal = isoDe(pick(raw, 'calibracao', 'dataCalibracao', 'ultimaCalibracao', 'data_calibracao'));
+    const prox = isoDe(pick(raw, 'proximaCalibracao', 'proxima_calibracao', 'dataProximaCalibracao', 'vencimento'));
+    if (prox && !cal) notas.push(`Próxima calibração (versão anterior): ${fmt(parseISO(prox))}`);
+    const item = (r, tipo, extraKeys) => {
+      if (typeof r !== 'object' || r === null) r = {codigo: r};
+      const c = isoDe(pick(r, 'calibracao', 'dataCalibracao', 'ultimaCalibracao'));
+      const px = isoDe(pick(r, 'proximaCalibracao', 'proxima_calibracao', 'vencimento'));
+      const it = {id: uid(), codigo: str(pick(r, 'codigo', 'code', 'nome')), calibracao: c, validade: validadeDe(r.validade)};
+      it[extraKeys[0]] = str(pick(r, ...extraKeys));
+      if (px && !c) notas.push(`${tipo} ${it.codigo || ''}: próxima calibração (versão anterior) ${fmt(parseISO(px))}`.replace('  ', ' '));
+      return it;
+    };
+    const relogios = lista(pick(raw, 'relogios', 'relógios', 'relogiosComparadores', 'relogio', 'relógio')).map(r => item(r, 'Relógio', ['resolucao', 'resolução']));
+    const pnps = lista(pick(raw, 'pnps', 'pnp', 'PNP', 'p_np', 'pNp')).map(r => item(r, 'P/NP', ['medida']));
+    const cor = COLORS.some(c => c.id === raw.cor) ? raw.cor : 'cinza';
+    const x = int(pick(raw, 'x', 'col', 'coluna'), null), y = int(pick(raw, 'y', 'row', 'linha'), null);
+    const w = clamp(int(pick(raw, 'w', 'largura', 'width'), 1), 1, MAX), h = clamp(int(pick(raw, 'h', 'altura', 'height'), 1), 1, MAX);
+    return {
+      id: novoId(raw.id), codigo: str(pick(raw, 'codigo', 'código', 'codigoEquipamento', 'code', 'tag')),
+      descricao: str(pick(raw, 'descricao', 'descrição', 'description', 'nome')),
+      calibracao: cal, validade: validadeDe(raw.validade), anotacao: notas.join('\n'), cor,
+      x, y, w, h, relogios, pnps,
+    };
+  });
+  // Garante que a sala comporta as posições existentes.
+  for (const e of eqs) if (e.x != null && e.y != null && e.x >= 0 && e.y >= 0) {
+    cols = Math.max(cols, Math.min(MAX, e.x + e.w)); rows = Math.max(rows, Math.min(MAX, e.y + e.h));
+  }
+  const placed = [];
+  const fits = (x, y, w, h) => x >= 0 && y >= 0 && x + w <= cols && y + h <= rows && !placed.some(o => overlap(o, x, y, w, h));
+  const pend = [];
+  for (const e of eqs) {
+    if (e.x != null && e.y != null && fits(e.x, e.y, e.w, e.h)) placed.push(e); else pend.push(e);
+  }
+  for (const e of pend) {
+    let ok = false;
+    for (let tent = 0; tent < 2 && !ok; tent++) {
+      if (tent === 1) { e.w = 1; e.h = 1; }
+      while (!ok) {
+        for (let y = 0; y < rows && !ok; y++) for (let x = 0; x < cols && !ok; x++) if (fits(x, y, e.w, e.h)) { e.x = x; e.y = y; ok = true; }
+        if (ok || rows >= MAX) break;
+        rows++;
+      }
+    }
+    if (!ok) throw new Error('Os equipamentos do arquivo não cabem em uma sala de 60 × 60.');
+    placed.push(e);
+  }
+  out.sala.cols = cols; out.sala.rows = rows; out.equipamentos = eqs;
+  return out;
+}
+
+function load() {
+  let t = null;
+  try { t = localStorage.getItem(KEY); } catch (e) { return blank(); }
+  if (!t) return blank();
+  try { return normalize(JSON.parse(t)); }
+  catch (e) { try { localStorage.setItem(KEY + '.corrompido', t); } catch (_) {} return blank(); }
+}
+function save() {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(S));
+    const d = new Date(); setStatus(`Salvo no navegador às ${p2(d.getHours())}:${p2(d.getMinutes())}`);
+  } catch (e) { setStatus('Não foi possível salvar no navegador. Salve uma cópia.', true); }
+}
+function setStatus(t, err) { const s = $('#status'); s.textContent = t; s.className = 'status' + (err ? ' err' : ''); }
+
+/* ====== Desfazer ====== */
+function snap(key) {
+  if (key && key === lastKey) return;
+  pushRaw(JSON.stringify(S)); lastKey = key || null;
+}
+function pushRaw(str) { undoStack.push(str); if (undoStack.length > UNDO_MAX) undoStack.shift(); lastKey = null; updUndo(); }
+function undo() {
+  if (!undoStack.length) return;
+  S = JSON.parse(undoStack.pop()); lastKey = null;
+  save(); render(); refreshPanel(); updUndo();
+  toast('Alteração desfeita');
+}
+function updUndo() { $('#bUndo').disabled = !undoStack.length; }
+function changed() { save(); render(); }
+
+/* ====== Desenho do mapa ====== */
+function cellSize() {
+  if (printS) return printS;
+  if (frozenS) return frozenS;
+  const W = mapEl.clientWidth - 70, H = mapEl.clientHeight - 70;
+  const s = Math.floor(Math.min(W / S.sala.cols, H / S.sala.rows));
+  return clamp(s, coarse ? 36 : 30, 64);
+}
+function matchEq(eq, q) {
+  if (/^vencid/.test(q)) return todosItens(eq).some(i => { const s = situacao(i.cal, i.val); return s && s.k === 'late'; });
+  if (q === 'a vencer' || q === 'vencer' || q === 'vence hoje') return todosItens(eq).some(i => { const s = situacao(i.cal, i.val); return s && (s.k === 'soon' || s.k === 'today'); });
+  const hay = [eq.codigo, eq.descricao, eq.anotacao];
+  const data = (c, v) => { const ve = vencimento(c, v); if (ve) hay.push(fmt(ve)); };
+  data(eq.calibracao, eq.validade);
+  for (const r of eq.relogios) { hay.push(r.codigo, r.resolucao); data(r.calibracao, r.validade); }
+  for (const p of eq.pnps) { hay.push(p.codigo, p.medida); data(p.calibracao, p.validade); }
+  return norm(hay.join(' \n ')).includes(q);
+}
+function render() {
+  const s = cellSize(); curS = s;
+  const {cols, rows} = S.sala;
+  room.style.width = cols * s + 'px'; room.style.height = rows * s + 'px';
+  room.style.backgroundSize = `${s}px ${s}px`;
+  const q = norm(query); let hits = 0;
+  layer.innerHTML = S.equipamentos.map(eq => {
+    const c = colorOf(eq.cor), av = avisos(eq), top = av[0];
+    const lines = Math.max(1, Math.floor((eq.h * s - 4 - 9) / 15));
+    const parts = [`<div class="l code">${eq.codigo ? esc(eq.codigo) : '<span class="none">sem código</span>'}</div>`];
+    let left = lines - 1, flag = '';
+    if (top) { if (left > 0) { parts.push(`<div class="l"><span class="w ${top.s.k}">${esc(textoMapa(top.s))}</span></div>`); left--; } else flag = `<span class="flag ${top.s.k}"></span>`; }
+    if (eq.descricao && left > 0) { parts.push(`<div class="l desc">${esc(eq.descricao)}</div>`); left--; }
+    const its = [
+      ...eq.relogios.map(r => 'Relógio ' + (r.codigo || '—') + (r.resolucao ? ' · ' + r.resolucao : '')),
+      ...eq.pnps.map(p => 'P/NP ' + (p.codigo || '—') + (p.medida ? ' · ' + p.medida : '')),
+    ];
+    if (its.length && left > 0) {
+      if (its.length <= left) its.forEach(t => parts.push(`<div class="l it">${esc(t)}</div>`));
+      else {
+        its.slice(0, left - 1).forEach(t => parts.push(`<div class="l it">${esc(t)}</div>`));
+        const rest = its.length - (left - 1);
+        parts.push(`<div class="l more">${left - 1 ? '+' : ''}${rest} ${rest === 1 ? 'item' : 'itens'}</div>`);
+      }
+    }
+    const tip = [[eq.codigo || 'Sem código', eq.descricao].filter(Boolean).join(' — '),
+      ...av.map(a => `${a.label}: ${textoPainel(a.s)} (${fmt(a.s.v)})`)].join('\n');
+    let cls = 'eq';
+    if (q) { if (matchEq(eq, q)) { cls += ' hit'; hits++; } else cls += ' dim'; }
+    if (eq.id === openId) cls += ' sel';
+    return `<div class="${cls}" data-id="${esc(eq.id)}" tabindex="0" title="${esc(tip)}" style="left:${eq.x * s + 2}px;top:${eq.y * s + 2}px;width:${eq.w * s - 4}px;height:${eq.h * s - 4}px;--fill:${c.fill};--bd:${c.bd}">${parts.join('')}${flag}<span class="rz" data-rz title="Arraste para mudar o tamanho"></span></div>`;
+  }).join('') + (S.equipamentos.length ? '' : `<div class="empty">${coarse ? 'Toque' : 'Clique'} em um espaço vazio para criar o primeiro equipamento.</div>`);
+  const qc = $('#qcount');
+  qc.textContent = q ? (hits === 0 ? 'Nada encontrado' : hits === 1 ? '1 encontrado' : `${hits} encontrados`) : '';
+  $('#qclear').hidden = !query;
+  if (document.activeElement !== $('#roomName')) $('#roomName').value = S.sala.nome;
+  document.title = (S.sala.nome || 'Sala') + ' · Sala de Dispositivos';
+  resumo();
+}
+function resumo() {
+  let late = 0, soon = 0, n = S.equipamentos.length;
+  for (const eq of S.equipamentos) for (const i of todosItens(eq)) {
+    const s = situacao(i.cal, i.val); if (!s) continue;
+    if (s.k === 'late') late++; else if (s.k !== 'ok') soon++;
+  }
+  const el = $('#summary');
+  el.innerHTML = `<span>${n} ${n === 1 ? 'equipamento' : 'equipamentos'}</span>` +
+    (late ? `<button class="pill late" data-q="vencido" title="Mostrar no mapa">${late} ${late === 1 ? 'vencido' : 'vencidos'}</button>` : '') +
+    (soon ? `<button class="pill soon" data-q="a vencer" title="Mostrar no mapa">${soon} a vencer em ${AVISO_DIAS} dias</button>` : '');
+}
+
+/* ====== Interação no mapa ====== */
+function cellAt(cx, cy) {
+  const r = room.getBoundingClientRect();
+  return {x: Math.floor((cx - r.left) / curS), y: Math.floor((cy - r.top) / curS)};
+}
+function occupied(x, y) { return S.equipamentos.some(o => x >= o.x && x < o.x + o.w && y >= o.y && y < o.y + o.h); }
+function canPlace(id, x, y, w, h, allowSwap) {
+  if (x < 0 || y < 0 || x + w > S.sala.cols || y + h > S.sala.rows) return {ok:false};
+  const hits = S.equipamentos.filter(o => o.id !== id && overlap(o, x, y, w, h));
+  if (!hits.length) return {ok:true};
+  const t = hits[0];
+  if (allowSwap && hits.length === 1 && t.x === x && t.y === y && t.w === w && t.h === h) return {ok:true, swap:t};
+  return {ok:false};
+}
+function showGhost(x, y, w, h, cls) {
+  const s = curS;
+  Object.assign(ghost.style, {display:'block', left:x * s + 2 + 'px', top:y * s + 2 + 'px', width:w * s - 4 + 'px', height:h * s - 4 + 'px'});
+  ghost.className = cls || '';
+}
+const hideGhost = () => { ghost.style.display = 'none'; };
+function track(pid, onMove, onEnd) {
+  const mv = e => { if (e.pointerId === pid) onMove(e); };
+  const up = e => { if (e.pointerId === pid) { done(); onEnd(e, false); } };
+  const cc = e => { if (e.pointerId === pid) { done(); onEnd(e, true); } };
+  function done() { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', cc); }
+  addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', cc);
+}
+function autoScroll(e) {
+  const r = mapEl.getBoundingClientRect(), m = 40, sp = 14; let dx = 0, dy = 0;
+  if (e.clientX < r.left + m) dx = -sp; else if (e.clientX > r.right - m) dx = sp;
+  if (e.clientY < r.top + m) dy = -sp; else if (e.clientY > r.bottom - m) dy = sp;
+  if (dx || dy) mapEl.scrollBy(dx, dy);
+}
+
+room.addEventListener('pointerdown', e => {
+  if (e.button > 0 || gesture) return;
+  const panelWasOpen = !!openId;
+  hoverEl.style.display = 'none';
+  const edge = e.target.closest('[data-edge]'); if (edge) return roomResize(e, edge);
+  const eqEl = e.target.closest('.eq');
+  if (eqEl && e.target.closest('[data-rz]')) return eqResize(e, eqEl.dataset.id, eqEl);
+  if (eqEl) return eqPress(e, eqEl.dataset.id, eqEl);
+  emptyPress(e, panelWasOpen);
+});
+room.addEventListener('touchmove', e => { if (gesture && gesture.lock) e.preventDefault(); }, {passive:false});
+room.addEventListener('contextmenu', e => e.preventDefault());
+// Depois de um toque, o navegador simula um clique de mouse que tiraria o foco do painel.
+let lastTouch = 0;
+room.addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') lastTouch = Date.now(); });
+room.addEventListener('mousedown', e => { if (Date.now() - lastTouch < 1000) e.preventDefault(); });
+room.addEventListener('pointermove', e => {
+  if (gesture || e.pointerType !== 'mouse' || e.target.closest('.eq,[data-edge]')) { hoverEl.style.display = 'none'; return; }
+  const c = cellAt(e.clientX, e.clientY);
+  if (c.x < 0 || c.y < 0 || c.x >= S.sala.cols || c.y >= S.sala.rows || occupied(c.x, c.y)) { hoverEl.style.display = 'none'; return; }
+  const s = curS;
+  Object.assign(hoverEl.style, {display:'flex', left:c.x * s + 2 + 'px', top:c.y * s + 2 + 'px', width:s - 4 + 'px', height:s - 4 + 'px'});
+});
+room.addEventListener('pointerleave', () => { hoverEl.style.display = 'none'; });
+
+function emptyPress(e, panelWasOpen) {
+  const sx = e.clientX, sy = e.clientY; let moved = false;
+  track(e.pointerId, ev => { if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 8) moved = true; }, (ev, cancelled) => {
+    if (cancelled || moved || panelWasOpen) return;
+    const c = cellAt(ev.clientX, ev.clientY);
+    if (c.x < 0 || c.y < 0 || c.x >= S.sala.cols || c.y >= S.sala.rows || occupied(c.x, c.y)) return;
+    criar(c.x, c.y);
+  });
+}
+function criar(x, y) {
+  let w = 1, h = 1;
+  for (const [a, b] of [[2, 2], [2, 1], [1, 2]]) if (canPlace(null, x, y, a, b).ok) { w = a; h = b; break; }
+  snap();
+  const eq = {id: uid(), codigo:'', descricao:'', calibracao:'', validade:1, anotacao:'', cor:'cinza', x, y, w, h, relogios:[], pnps:[]};
+  S.equipamentos.push(eq);
+  changed();
+  openPanel(eq.id, true);
+}
+
+function eqPress(e, id, el) {
+  const eq = find(id); if (!eq) return;
+  const touch = e.pointerType === 'touch';
+  if (!touch) e.preventDefault();
+  const s = curS, sx = e.clientX, sy = e.clientY;
+  const rr = room.getBoundingClientRect();
+  const gx = sx - (rr.left + eq.x * s), gy = sy - (rr.top + eq.y * s);
+  const before = JSON.stringify(S);
+  let state = 'press', hold = null, res = null, nx = eq.x, ny = eq.y, moved = false;
+  gesture = {lock:false};
+  const begin = () => {
+    state = 'drag'; gesture.lock = true; el.classList.add('dragging');
+    if (openId) closePanel();
+    showGhost(eq.x, eq.y, eq.w, eq.h);
+  };
+  if (touch) hold = setTimeout(() => { if (state === 'press') { begin(); if (navigator.vibrate) navigator.vibrate(12); } }, 320);
+  track(e.pointerId, ev => {
+    const d = Math.hypot(ev.clientX - sx, ev.clientY - sy);
+    if (state === 'press') {
+      if (d <= (touch ? 10 : 4)) return;
+      if (touch) { clearTimeout(hold); state = 'scroll'; return; }
+      begin();
+    }
+    if (state !== 'drag') return;
+    autoScroll(ev);
+    const r = room.getBoundingClientRect();
+    nx = clamp(Math.round((ev.clientX - gx - r.left) / s), 0, S.sala.cols - eq.w);
+    ny = clamp(Math.round((ev.clientY - gy - r.top) / s), 0, S.sala.rows - eq.h);
+    if (nx !== eq.x || ny !== eq.y) moved = true;
+    res = (nx === eq.x && ny === eq.y) ? {ok:true} : canPlace(eq.id, nx, ny, eq.w, eq.h, true);
+    showGhost(nx, ny, eq.w, eq.h, res.ok ? (res.swap ? 'swap' : '') : 'bad');
+  }, (ev, cancelled) => {
+    clearTimeout(hold);
+    const st = state; gesture = null; hideGhost(); el.classList.remove('dragging');
+    if (cancelled || st === 'scroll') return;
+    if (st === 'press' || (st === 'drag' && touch && !moved)) { openPanel(id); return; }
+    if (st !== 'drag' || !res || !res.ok || (nx === eq.x && ny === eq.y)) return;
+    pushRaw(before);
+    if (res.swap) { res.swap.x = eq.x; res.swap.y = eq.y; }
+    eq.x = nx; eq.y = ny;
+    changed();
+    if (res.swap) toast(`Trocou de lugar com ${res.swap.codigo || 'o outro equipamento'}`);
+  });
+}
+
+function eqResize(e, id, el) {
+  e.preventDefault();
+  const eq = find(id); if (!eq) return;
+  const s = curS, sx = e.clientX, sy = e.clientY, before = JSON.stringify(S);
+  let w = eq.w, h = eq.h, blocked = false;
+  gesture = {lock:true}; el.classList.add('dragging'); if (openId) closePanel();
+  showGhost(eq.x, eq.y, w, h);
+  track(e.pointerId, ev => {
+    autoScroll(ev);
+    const nw = clamp(eq.w + Math.round((ev.clientX - sx) / s), 1, S.sala.cols - eq.x);
+    const nh = clamp(eq.h + Math.round((ev.clientY - sy) / s), 1, S.sala.rows - eq.y);
+    if (canPlace(eq.id, eq.x, eq.y, nw, nh, false).ok) { w = nw; h = nh; blocked = false; showGhost(eq.x, eq.y, w, h); }
+    else { blocked = true; showGhost(eq.x, eq.y, nw, nh, 'bad'); }
+  }, (ev, cancelled) => {
+    gesture = null; hideGhost(); el.classList.remove('dragging');
+    if (cancelled || (w === eq.w && h === eq.h)) { if (blocked) toast('Não cabe: há outro equipamento no caminho.'); return; }
+    pushRaw(before); eq.w = w; eq.h = h; changed();
+  });
+}
+
+function roomResize(e, edgeEl) {
+  e.preventDefault();
+  const kind = edgeEl.dataset.edge, s = curS, sx = e.clientX, sy = e.clientY, before = JSON.stringify(S);
+  const c0 = S.sala.cols, r0 = S.sala.rows;
+  const minC = Math.max(2, ...S.equipamentos.map(o => o.x + o.w));
+  const minR = Math.max(2, ...S.equipamentos.map(o => o.y + o.h));
+  frozenS = s; gesture = {lock:true}; edgeEl.classList.add('on'); if (openId) closePanel();
+  const tag = $('#sizeTag');
+  const show = blocked => { tag.style.display = 'block'; tag.textContent = `${S.sala.cols} × ${S.sala.rows}` + (blocked ? ' · há equipamento na borda' : ''); };
+  show(false);
+  track(e.pointerId, ev => {
+    let blocked = false;
+    if (kind !== 'b') { const want = c0 + Math.round((ev.clientX - sx) / s); if (want < minC && minC > 2) blocked = true; S.sala.cols = clamp(want, minC, MAX); }
+    if (kind !== 'r') { const want = r0 + Math.round((ev.clientY - sy) / s); if (want < minR && minR > 2) blocked = true; S.sala.rows = clamp(want, minR, MAX); }
+    render(); show(blocked); autoScroll(ev);
+  }, () => {
+    frozenS = 0; gesture = null; edgeEl.classList.remove('on'); tag.style.display = 'none';
+    if (S.sala.cols !== c0 || S.sala.rows !== r0) { pushRaw(before); save(); }
+    render();
+  });
+}
+
+layer.addEventListener('keydown', e => {
+  const el = e.target.closest('.eq'); if (!el) return;
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); openPanel(el.dataset.id); }
+});
+
+/* ====== Painel ====== */
+const optsValidade = v => [1,2,3].map(n => `<option value="${n}"${+v === n ? ' selected' : ''}>${n} ${n === 1 ? 'ano' : 'anos'}</option>`).join('');
+function stHTML(cal, val) {
+  const s = situacao(cal, val);
+  if (!s) return {cls:'', html:'Sem data de calibração'};
+  const quando = s.k === 'late' ? 'venceu' : 'vence';
+  return {cls:s.k, html:`<b>${esc(textoPainel(s))}</b> · ${quando} ${fmt(s.v)}`};
+}
+function itemHTML(kind, it) {
+  const extra = kind === 'relogios' ? ['resolucao', 'Resolução', 'ex.: 0,01 mm'] : ['medida', 'Medida', 'ex.: Ø 10 H7'];
+  const st = stHTML(it.calibracao, it.validade);
+  return `<div class="item" data-list="${kind}" data-iid="${esc(it.id)}">
+    <label class="mini"><span>Código</span><input data-if="codigo" value="${esc(it.codigo)}" autocomplete="off"></label>
+    <label class="mini"><span>${extra[1]}</span><input data-if="${extra[0]}" value="${esc(it[extra[0]])}" placeholder="${extra[2]}" autocomplete="off"></label>
+    <button class="rm" data-rm title="Remover" aria-label="Remover">×</button>
+    <label class="mini"><span>Data de calibração</span><input type="date" data-if="calibracao" value="${esc(it.calibracao)}"></label>
+    <label class="mini"><span>Validade</span><select data-if="validade">${optsValidade(it.validade)}</select></label>
+    <span></span>
+    <div class="st ${st.cls}" data-st="${esc(it.id)}">${st.html}</div>
+  </div>`;
+}
+function buildPanel() {
+  const eq = find(openId); if (!eq) return;
+  const st = stHTML(eq.calibracao, eq.validade);
+  pbody.innerHTML = `
+    <label class="f"><span>Código Equipamento</span><input data-f="codigo" value="${esc(eq.codigo)}" autocomplete="off"></label>
+    <label class="f"><span>Descrição</span><input data-f="descricao" value="${esc(eq.descricao)}" autocomplete="off"></label>
+    <div class="box">
+      <h3>Calibração do equipamento</h3>
+      <div class="row2">
+        <label class="mini"><span>Data de calibração</span><input type="date" data-f="calibracao" value="${esc(eq.calibracao)}"></label>
+        <label class="mini"><span>Validade</span><select data-f="validade">${optsValidade(eq.validade)}</select></label>
+      </div>
+      <div class="st ${st.cls}" data-st="eq">${st.html}</div>
+    </div>
+    <div class="box">
+      <h3>Relógios comparadores <small>${eq.relogios.length || ''}</small></h3>
+      ${eq.relogios.map(r => itemHTML('relogios', r)).join('')}
+      <button class="add" data-add="relogios">+ Adicionar relógio comparador</button>
+    </div>
+    <div class="box">
+      <h3>P/NP <small>${eq.pnps.length || ''}</small></h3>
+      ${eq.pnps.map(p => itemHTML('pnps', p)).join('')}
+      <button class="add" data-add="pnps">+ Adicionar P/NP</button>
+    </div>
+    <label class="f"><span>Anotação</span><textarea data-f="anotacao" rows="3">${esc(eq.anotacao)}</textarea></label>
+    <div class="f"><span>Cor</span><div class="cores">${COLORS.map(c => `<button class="sw" data-cor="${c.id}" title="${c.nome}" aria-label="${c.nome}" aria-pressed="${eq.cor === c.id}" style="--fill:${c.fill};--bd:${c.bd}"></button>`).join('')}</div></div>
+    <button class="danger" data-del>Apagar equipamento</button>`;
+  $('#ptitle').textContent = eq.codigo ? `Equipamento ${eq.codigo}` : 'Novo equipamento';
+}
+function updStatus() {
+  const eq = find(openId); if (!eq) return;
+  const set = (el, cal, val) => { const st = stHTML(cal, val); el.className = 'st ' + st.cls; el.innerHTML = st.html; };
+  pbody.querySelectorAll('[data-st]').forEach(el => {
+    const k = el.dataset.st;
+    if (k === 'eq') return set(el, eq.calibracao, eq.validade);
+    const it = [...eq.relogios, ...eq.pnps].find(i => i.id === k); if (it) set(el, it.calibracao, it.validade);
+  });
+  $('#ptitle').textContent = eq.codigo ? `Equipamento ${eq.codigo}` : 'Novo equipamento';
+}
+function placePanel() {
+  const narrow = narrowMQ.matches;
+  panel.classList.toggle('sheet', narrow);
+  document.body.classList.toggle('sheet-open', narrow);
+  const el = layer.querySelector(`[data-id="${CSS.escape(openId)}"]`);
+  if (narrow) {
+    panel.style.left = panel.style.top = '';
+    if (el) requestAnimationFrame(() => {
+      const r = el.getBoundingClientRect(), m = mapEl.getBoundingClientRect();
+      mapEl.scrollBy({top: r.top - m.top - 12, left: Math.min(0, r.left - m.left - 12) || (r.right > innerWidth ? r.left - m.left - 12 : 0), behavior:'smooth'});
+    });
+    return;
+  }
+  const pw = panel.offsetWidth, ph = panel.offsetHeight;
+  let left = 16, top = 80;
+  if (el) {
+    const r = el.getBoundingClientRect();
+    left = r.right + 12;
+    if (left + pw > innerWidth - 8) left = r.left - pw - 12;
+    if (left < 8) left = clamp(r.left, 8, innerWidth - pw - 8);
+    top = r.top;
+  }
+  panel.style.left = clamp(left, 8, Math.max(8, innerWidth - pw - 8)) + 'px';
+  panel.style.top = clamp(top, 8, Math.max(8, innerHeight - ph - 8)) + 'px';
+}
+function openPanel(id, focusCode) {
+  if (!find(id)) return;
+  openId = id; lastKey = null;
+  buildPanel(); panel.hidden = false;
+  layer.querySelectorAll('.eq.sel').forEach(x => x.classList.remove('sel'));
+  const el = layer.querySelector(`[data-id="${CSS.escape(id)}"]`); if (el) el.classList.add('sel');
+  placePanel();
+  if (focusCode) pbody.querySelector('[data-f="codigo"]').focus({preventScroll:true});
+}
+function closePanel() {
+  if (!openId) return;
+  const ae = document.activeElement; if (ae && panel.contains(ae)) ae.blur();
+  const id = openId; openId = null; lastKey = null; panel.hidden = true;
+  document.body.classList.remove('sheet-open');
+  const el = layer.querySelector(`[data-id="${CSS.escape(id)}"]`);
+  if (el) { el.classList.remove('sel'); if (!coarse) el.focus({preventScroll:true}); }
+}
+function refreshPanel() {
+  if (!openId) return;
+  if (!find(openId)) { closePanel(); return; }
+  const sc = pbody.scrollTop; buildPanel(); pbody.scrollTop = sc;
+}
+
+pbody.addEventListener('focusin', () => { lastKey = null; });
+pbody.addEventListener('input', onField);
+pbody.addEventListener('change', onField);
+function onField(e) {
+  const eq = find(openId); if (!eq) return;
+  const t = e.target;
+  if (e.type === 'change' && t.tagName !== 'SELECT') return; // texto e datas já tratados em "input"
+  if (e.type === 'input' && t.tagName === 'SELECT') return;
+  if (t.dataset.f) {
+    const f = t.dataset.f, v = f === 'validade' ? +t.value : t.value;
+    if (eq[f] === v) return;
+    snap(t.tagName === 'SELECT' ? null : `f:${eq.id}:${f}`);
+    eq[f] = v;
+  } else if (t.dataset.if) {
+    const row = t.closest('.item'), arr = eq[row.dataset.list], it = arr.find(i => i.id === row.dataset.iid); if (!it) return;
+    const f = t.dataset.if, v = f === 'validade' ? +t.value : t.value;
+    if (it[f] === v) return;
+    snap(t.tagName === 'SELECT' ? null : `i:${it.id}:${f}`);
+    it[f] = v;
+  } else return;
+  save(); render(); updStatus();
+}
+pbody.addEventListener('click', e => {
+  const eq = find(openId); if (!eq) return;
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.add) {
+    snap();
+    const it = {id: uid(), codigo:'', calibracao:'', validade:1};
+    it[b.dataset.add === 'relogios' ? 'resolucao' : 'medida'] = '';
+    eq[b.dataset.add].push(it);
+    changed(); refreshPanel();
+    const inp = pbody.querySelector(`[data-iid="${CSS.escape(it.id)}"] [data-if="codigo"]`);
+    if (inp) { inp.focus(); inp.scrollIntoView({block:'nearest'}); }
+  } else if (b.hasAttribute('data-rm')) {
+    const row = b.closest('.item'); snap();
+    eq[row.dataset.list] = eq[row.dataset.list].filter(i => i.id !== row.dataset.iid);
+    changed(); refreshPanel();
+    toast(row.dataset.list === 'relogios' ? 'Relógio removido' : 'P/NP removido', {label:'Desfazer', action:undo});
+  } else if (b.dataset.cor) {
+    if (eq.cor === b.dataset.cor) return;
+    snap(); eq.cor = b.dataset.cor; changed();
+    pbody.querySelectorAll('[data-cor]').forEach(x => x.setAttribute('aria-pressed', x.dataset.cor === eq.cor));
+  } else if (b.hasAttribute('data-del')) {
+    snap();
+    S.equipamentos = S.equipamentos.filter(x => x.id !== eq.id);
+    closePanel(); changed();
+    toast(`Equipamento ${eq.codigo || 'sem código'} apagado`, {label:'Desfazer', action:undo});
+  }
+});
+pbody.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.isComposing && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) { e.preventDefault(); closePanel(); }
+});
+$('#pclose').addEventListener('click', closePanel);
+document.addEventListener('pointerdown', e => {
+  if (!openId || panel.contains(e.target) || e.target.closest('#toast')) return;
+  closePanel();
+});
+// Arrastar o painel pelo título
+$('#phead').addEventListener('pointerdown', e => {
+  if (e.target.closest('button') || panel.classList.contains('sheet')) return;
+  e.preventDefault();
+  const r = panel.getBoundingClientRect(), ox = e.clientX - r.left, oy = e.clientY - r.top;
+  track(e.pointerId, ev => {
+    panel.style.left = clamp(ev.clientX - ox, 0, innerWidth - 60) + 'px';
+    panel.style.top = clamp(ev.clientY - oy, 0, innerHeight - 40) + 'px';
+  }, () => {});
+});
+
+/* ====== Cabeçalho: nome, busca, arquivo, impressão ====== */
+const nameEl = $('#roomName');
+nameEl.addEventListener('focusin', () => { lastKey = null; });
+nameEl.addEventListener('input', () => { snap('nome'); S.sala.nome = nameEl.value; save(); document.title = (S.sala.nome || 'Sala') + ' · Sala de Dispositivos'; });
+nameEl.addEventListener('keydown', e => { if (e.key === 'Enter') nameEl.blur(); });
+nameEl.addEventListener('blur', () => { if (!S.sala.nome.trim()) { S.sala.nome = 'Sala de dispositivos'; save(); render(); } });
+
+let qT;
+qEl.addEventListener('input', () => { query = qEl.value; clearTimeout(qT); qT = setTimeout(render, 80); });
+qEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { query = qEl.value; render(); const h = layer.querySelector('.eq.hit'); if (h) { h.scrollIntoView({block:'center', inline:'center', behavior:'smooth'}); h.classList.add('flash'); } }
+  if (e.key === 'Escape') { qEl.value = query = ''; render(); }
+});
+$('#qclear').addEventListener('click', () => { qEl.value = query = ''; render(); qEl.focus(); });
+$('#summary').addEventListener('click', e => { const b = e.target.closest('[data-q]'); if (!b) return; qEl.value = query = b.dataset.q; render(); });
+
+$('#bUndo').addEventListener('click', undo);
+$('#bSave').addEventListener('click', () => {
+  const d = new Date(), stamp = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
+  const slug = norm(S.sala.nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'sala';
+  const blob = new Blob([JSON.stringify({app:'sala-dispositivos', salvoEm:d.toISOString(), ...S}, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${slug}-${stamp}.json`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast('Cópia salva. Guarde o arquivo em um lugar seguro.');
+});
+$('#bOpen').addEventListener('click', () => $('#file').click());
+$('#file').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  let data;
+  try { data = JSON.parse(await f.text()); }
+  catch (_) { toast(`Arquivo recusado: “${f.name}” não é um arquivo .json válido. O mapa atual não foi alterado.`, {error:true}); return; }
+  try { data = normalize(data); }
+  catch (err) { toast(`Arquivo recusado: ${err.message} O mapa atual não foi alterado.`, {error:true}); return; }
+  closePanel(); snap(); S = data; changed();
+  const n = S.equipamentos.length;
+  toast(`Cópia aberta: ${n} ${n === 1 ? 'equipamento' : 'equipamentos'}.`, {label:'Desfazer', action:undo});
+});
+
+function preparePrint() {
+  const {cols, rows} = S.sala;
+  printS = clamp(Math.floor(Math.min(1030 / cols, 640 / rows)), 8, 64);
+  $('#phName').textContent = S.sala.nome;
+  $('#phInfo').textContent = `Impresso em ${fmt(hoje())} · Laranja: vence em até ${AVISO_DIAS} dias · Vermelho: vencido`;
+  render();
+}
+function endPrint() { if (!printS) return; printS = 0; render(); }
+addEventListener('beforeprint', preparePrint);
+addEventListener('afterprint', endPrint);
+matchMedia('print').addEventListener?.('change', e => e.matches ? preparePrint() : endPrint());
+$('#bPrint').addEventListener('click', () => { closePanel(); window.print(); });
+
+/* ====== Teclado global ====== */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && openId) { e.preventDefault(); closePanel(); return; }
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+    if (e.target === qEl) return;
+    e.preventDefault(); undo();
+  }
+});
+
+/* ====== Avisos ====== */
+let toastT;
+function toast(msg, o = {}) {
+  const t = $('#toast');
+  t.innerHTML = `<span>${esc(msg)}</span>` + (o.action ? `<button>${esc(o.label)}</button>` : '');
+  t.className = 'show' + (o.error ? ' err' : '');
+  if (o.action) t.querySelector('button').onclick = () => { t.className = ''; o.action(); };
+  clearTimeout(toastT); toastT = setTimeout(() => { t.className = ''; }, o.error ? 9000 : 5000);
+}
+
+/* ====== Início ====== */
+$('#hint').textContent = coarse
+  ? 'Toque em um espaço vazio para criar. Toque em um equipamento para editar. Segure e arraste para mover. Puxe o canto para mudar o tamanho.'
+  : 'Clique em um espaço vazio para criar. Clique em um equipamento para editar. Arraste para mover (sobre outro do mesmo tamanho, troca de lugar). Puxe o canto para mudar o tamanho. Puxe a borda da sala para aumentá-la.';
+S = load();
+render();
+let rT; addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() => { if (gesture) return; render(); if (openId) { const id = openId; layer.querySelector(`[data-id="${CSS.escape(id)}"]`)?.classList.add('sel'); placePanel(); } }, 120); });
+setInterval(() => { if (!gesture) { render(); if (openId) updStatus(); } }, 60 * 60 * 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && !gesture) render(); });
+</script>
+</body>
+</html>
