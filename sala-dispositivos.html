@@ -237,6 +237,9 @@ body.sheet-open #map{padding-bottom:75vh}
 
 @media (pointer:coarse){.eq .rz{width:min(24px,40%);height:min(24px,40%)}.edge.r{width:20px;right:-22px}.edge.b{height:20px;bottom:-22px}.edge.c{width:26px;height:26px;right:-26px;bottom:-26px}}
 @media (max-width:700px){
+  html,body{height:auto;overflow-x:hidden;overflow-y:visible}
+  body{display:block;min-height:100%}
+  #map{overflow-x:auto;overflow-y:hidden;flex:none}
   header{padding:8px 12px}
   header .top .status{font-size:11.5px;width:100%;margin-left:0;min-height:1.4em;line-height:1.4em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .tools .lg{display:none}
@@ -564,7 +567,8 @@ function cellSize() {
   if (printS) return printS;
   if (frozenS) return frozenS;
   const W = mapEl.clientWidth - 70, H = mapEl.clientHeight - 70;
-  const s = Math.floor(Math.min(W / R().cols, H / R().rows));
+  // No celular a página inteira rola (o topo não fica parado): o tamanho vem só da largura.
+  const s = Math.floor(narrowMQ.matches ? W / R().cols : Math.min(W / R().cols, H / R().rows));
   return clamp(s, coarse ? 36 : 30, 64);
 }
 function matchEq(eq, q) {
@@ -680,6 +684,12 @@ function autoScroll(e) {
   const r = mapEl.getBoundingClientRect(), m = 40, sp = 14; let dx = 0, dy = 0;
   if (e.clientX < r.left + m) dx = -sp; else if (e.clientX > r.right - m) dx = sp;
   if (e.clientY < r.top + m) dy = -sp; else if (e.clientY > r.bottom - m) dy = sp;
+  if (narrowMQ.matches) { // vertical: a página; horizontal: o mapa
+    if (e.clientY < 60) dy = -sp; else if (e.clientY > innerHeight - 60) dy = sp; else dy = 0;
+    if (dx) mapEl.scrollBy(dx, 0);
+    if (dy) window.scrollBy(0, dy);
+    return;
+  }
   if (dx || dy) mapEl.scrollBy(dx, dy);
 }
 
@@ -907,7 +917,9 @@ function placePanel() {
     panel.style.left = panel.style.top = '';
     if (el) requestAnimationFrame(() => {
       const r = el.getBoundingClientRect(), m = mapEl.getBoundingClientRect();
-      mapEl.scrollBy({top: r.top - m.top - 12, left: Math.min(0, r.left - m.left - 12) || (r.right > innerWidth ? r.left - m.left - 12 : 0), behavior:'smooth'});
+      window.scrollBy({top: r.top - 12, behavior:'smooth'});
+      const dx = Math.min(0, r.left - m.left - 12) || (r.right > innerWidth ? r.left - m.left - 12 : 0);
+      if (dx) mapEl.scrollBy({left: dx, behavior:'smooth'});
     });
     return;
   }
