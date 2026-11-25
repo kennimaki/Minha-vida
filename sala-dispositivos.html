@@ -114,8 +114,8 @@ body.sheet-open #map{padding-bottom:75vh}
   touch-action:pan-x pan-y;font-size:12px;line-height:15px;transition:opacity .12s,box-shadow .12s}
 .eq:hover{box-shadow:0 2px 8px rgba(0,0,0,.12)}
 .eq .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.eq .band{background:var(--band);color:var(--bink);height:var(--bh);line-height:var(--bh);padding:0 5px;font-weight:800;font-size:var(--bfs,13.5px);letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.eq.mini .band{height:100%;line-height:1;white-space:normal;overflow-wrap:anywhere;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 1px;font-size:min(var(--bfs,13px),11px)}
+.eq .band{background:var(--band);color:var(--bink);height:var(--bh);line-height:var(--bh);padding:0 5px;font-weight:800;font-size:var(--bfs,13.5px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eq.mini .band{height:100%;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:clip;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 1px;font-size:var(--bfs,11px)}
 .eq.mini .corpo{display:none}
 .eq .band .none{font-weight:500;font-style:italic;opacity:.8}
 .eq .corpo{padding:2px 6px}
@@ -160,6 +160,9 @@ body.modo-geral #roomName{cursor:default}
 .legenda span{display:flex;align-items:center;gap:6px}
 .legenda i{width:14px;height:14px;border-radius:4px;border:2px solid}
 .lg-ok{background:#e2f3e7;border-color:#3f9b5f!important} .lg-soon{background:#fff7d6;border-color:#d9a900!important}
+.lg-inativo{background:#eceeeb;border-color:#8d968f!important} .lg-danificado{background:#f1e7f6;border-color:#8a4fa3!important}
+.w.est-inativo{background:#dfe2df;color:#4c544f} .w.est-danificado{background:#e6d3ef;color:#5b2d70}
+.eq.st-inativo,.eq.st-danificado{background-image:repeating-linear-gradient(135deg,transparent 0 7px,rgba(0,0,0,.045) 7px 9px)}
 .lg-late{background:#fde6e6;border-color:#d64545!important} .lg-none{background:#f3f4f2;border-color:#b3bab4!important}
 #sizeTag{position:absolute;right:0;bottom:-38px;background:var(--ink);color:#fff;font-size:12px;padding:2px 8px;border-radius:4px;display:none;white-space:nowrap}
 .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);pointer-events:none;padding:16px;font-size:15px}
@@ -192,6 +195,16 @@ body.modo-geral #roomName{cursor:default}
 .st.miss{color:var(--warn)}
 .rmtxt{align-self:flex-end;border:0;background:transparent;color:var(--late);font-size:12.5px;padding:2px 0}
 .rmtxt:hover{text-decoration:underline}
+.ih b{flex:1;min-width:0}
+.estpill{font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;margin-right:4px;white-space:nowrap}
+.estpill.est-inativo{background:#dfe2df;color:#4c544f} .estpill.est-danificado{background:#e6d3ef;color:#5b2d70}
+.estaviso{margin:0;font-size:12px;color:var(--muted)}
+.item.fora{background:#f4f5f3}
+.item.fora .cal3,.item.fora .st{opacity:.6}
+#phead .dots{width:34px;height:32px}
+#imenu .sep{height:1px;background:var(--line);margin:4px 6px}
+#imenu .chk{padding-left:30px;position:relative}
+#imenu .chk[aria-checked="true"]::before{content:"✓";position:absolute;left:11px;font-weight:700;color:var(--acc)}
 .dots{border:1px solid transparent;background:transparent;border-radius:6px;width:30px;height:26px;font-size:18px;line-height:1;color:var(--muted);padding:0}
 .dots:hover{background:#eef0ec;border-color:var(--line);color:var(--ink)}
 .addrow{display:flex}
@@ -290,6 +303,7 @@ body.modo-geral #roomName{cursor:default}
 #plist td{padding:3px 5px;border-bottom:1px solid #e2e5e0;vertical-align:top}
 #plist tr.g td{border-top:1.5px solid #9aa59d}
 #plist td.eqc{font-weight:700}
+#plist .inat{color:#6b736e;font-style:italic}
 #plist .late{color:#c22727;font-weight:700} #plist .soon,#plist .today{color:#b45f00;font-weight:700} #plist .miss{color:#b45f00} #plist .ok{color:#2e7d4f}
 #plist thead{display:table-header-group} #plist tr{break-inside:avoid}
 
@@ -410,11 +424,11 @@ body.modo-geral #roomName{cursor:default}
     <div class="edge c" data-edge="c" title="Arraste para mudar o tamanho da sala"></div>
     <div id="sizeTag"></div>
   </div>
-  <div class="legenda" aria-label="Legenda"><span><i class="lg-ok"></i>Em dia</span><span><i class="lg-soon"></i>Vence em até 30 dias</span><span><i class="lg-late"></i>Vencido</span><span><i class="lg-none"></i>Sem data</span></div>
+  <div class="legenda" aria-label="Legenda"><span><i class="lg-ok"></i>Em dia</span><span><i class="lg-soon"></i>Vence em até 30 dias</span><span><i class="lg-late"></i>Vencido</span><span><i class="lg-none"></i>Sem data</span><span><i class="lg-inativo"></i>Inativo</span><span><i class="lg-danificado"></i>Danificado</span></div>
 </main>
 
 <div id="panel" role="dialog" aria-labelledby="ptitle" hidden>
-  <div id="phead"><span id="ptitle">Equipamento</span><button id="pclose" aria-label="Fechar" title="Fechar (Esc)">×</button></div>
+  <div id="phead"><span id="ptitle">Equipamento</span><span id="pestado"></span><button class="dots" id="pmenu" title="Situação, duplicar ou excluir" aria-label="Opções do equipamento" aria-haspopup="menu">⋯</button><button id="pclose" aria-label="Fechar" title="Fechar (Esc)">×</button></div>
   <div id="pbody"></div>
 </div>
 <section id="plist" aria-hidden="true"></section>
@@ -439,11 +453,7 @@ body.modo-geral #roomName{cursor:default}
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="sugest" role="listbox" hidden></div>
-<div id="imenu" role="menu" hidden>
-  <button data-acao="mover" role="menuitem">Mover para outra máquina…</button>
-  <button data-acao="duplicar" role="menuitem">Duplicar</button>
-  <button data-acao="excluir" role="menuitem" class="perigo">Excluir item</button>
-</div>
+<div id="imenu" role="menu" hidden></div>
 <div id="modal" hidden><div class="mbox" role="dialog" aria-modal="true" aria-labelledby="mtitle"><h3 id="mtitle"></h3><div id="mbody"></div><div class="mbtns" id="mbtns"></div></div></div>
 
 <script>
@@ -467,8 +477,14 @@ const STATUS_COR = {
   soon: {fill:'#fff7d6', bd:'#d9a900', band:'#f5c400', ink:'#3a2e00', nome:'Vence em até 30 dias'},
   ok:   {fill:'#e2f3e7', bd:'#3f9b5f', band:'#2e7d4f', ink:'#ffffff', nome:'Em dia'},
   none: {fill:'#f3f4f2', bd:'#b3bab4', band:'#dfe3de', ink:'#3a433e', nome:'Sem data de calibração'},
+  inativo:    {fill:'#eceeeb', bd:'#8d968f', band:'#7b847e', ink:'#ffffff', nome:'Inativo'},
+  danificado: {fill:'#f1e7f6', bd:'#8a4fa3', band:'#6f3a87', ink:'#ffffff', nome:'Danificado'},
 };
+const ESTADOS = [['ativo', 'Ativo'], ['inativo', 'Inativo'], ['danificado', 'Danificado']];
+const estadoDe = v => ESTADOS.some(e => e[0] === v) ? v : 'ativo';
+const nomeEstado = v => (ESTADOS.find(e => e[0] === v) || ESTADOS[0])[1];
 function statusEq(eq) {
+  if (eq.estado && eq.estado !== 'ativo') return eq.estado;
   let k = 'none';
   for (const i of todosItens(eq)) {
     const s = situacao(i.cal, i.val); if (!s) continue;
@@ -538,9 +554,10 @@ const MEMORIA_PADRAO = ['Relógio comparador', 'P/NP', 'Controle de temperatura'
 const nomeItem = i => [i.codigo, i.descricao].filter(Boolean).join(' – ') || 'Item sem código';
 const validId = v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(v);
 function todosItens(eq) {
+  if (eq.estado && eq.estado !== 'ativo') return [];
   return [
     ...(eq.calibravel ? [{label:'Equipamento', cal:eq.calibracao, val:eq.validade}] : []),
-    ...eq.itens.map(i => ({label:nomeItem(i), cal:i.calibracao, val:i.validade})),
+    ...eq.itens.filter(i => !i.estado || i.estado === 'ativo').map(i => ({label:nomeItem(i), cal:i.calibracao, val:i.validade})),
   ];
 }
 function avisos(eq) {
@@ -575,6 +592,13 @@ function garantirGeral(st, g) {
     if (pos) blocos.push({id:sala.id, ...pos});
   }
   st.geral = {id:GERAL, nome:'Layout geral', cols, rows, equipamentos:blocos};
+}
+// Tamanho de letra para o texto caber em uma linha na largura disponível.
+const medidor = document.createElement('canvas').getContext('2d');
+function letraQueCabe(texto, largura, max, min) {
+  medidor.font = '800 100px ' + getComputedStyle(document.body).fontFamily;
+  const w100 = medidor.measureText(texto || ' ').width || 1;
+  return clamp(Math.floor((largura / w100) * 100 * 0.9 * 10) / 10, min, max);
 }
 function statusSala(sala) {
   let k = 'none';
@@ -648,7 +672,7 @@ function normalizeSala(d, ids) {
       const px = isoDe(pick(r, 'proximaCalibracao', 'proxima_calibracao', 'vencimento'));
       const desc = str(pick(r, 'descricao', 'descrição', 'description')), tipo = str(pick(r, 'tipo', 'type')) || tipoPadrao;
       const it = {id: validId(r.id) ? r.id : uid(), codigo: str(pick(r, 'codigo', 'código', 'code', 'nome')),
-        descricao: desc || tipo, calibracao: c, validade: validadeDe(r.validade),
+        descricao: desc || tipo, calibracao: c, validade: validadeDe(r.validade), estado: estadoDe(r.estado),
         obs: [str(pick(r, 'obs', 'observacao', 'observação')), desc && tipo ? tipo : '', str(pick(r, ...especKeys))].filter(Boolean).join(' · ')};
       if (px && !c) notas.push(`${nomeItem(it)}: próxima calibração (versão anterior) ${fmt(parseISO(px))}`);
       return it;
@@ -665,7 +689,7 @@ function normalizeSala(d, ids) {
       id: novoId(raw.id), codigo: str(pick(raw, 'codigo', 'código', 'codigoEquipamento', 'code', 'tag')),
       descricao: str(pick(raw, 'descricao', 'descrição', 'description', 'nome')),
       calibracao: cal, validade: validadeDe(raw.validade), anotacao: notas.join('\n'), cor,
-      calibravel: raw.calibravel !== false, x, y, w, h, itens,
+      calibravel: raw.calibravel !== false, estado: estadoDe(raw.estado), x, y, w, h, itens,
     };
   });
   // Garante que a sala comporta as posições existentes.
@@ -741,6 +765,7 @@ function matchEq(eq, q) {
   if (/^vencid/.test(q)) return todosItens(eq).some(i => { const s = situacao(i.cal, i.val); return s && s.k === 'late'; });
   if (q === 'a vencer' || q === 'vencer' || q === 'vence hoje') return todosItens(eq).some(i => { const s = situacao(i.cal, i.val); return s && (s.k === 'soon' || s.k === 'today'); });
   if (q === 'sem data') return todosItens(eq).some(i => !parseISO(i.cal));
+  if (q === 'inativo' || q === 'danificado') return eq.estado === q || eq.itens.some(i => i.estado === q);
   const hay = [eq.codigo, eq.descricao, eq.anotacao];
   const data = (c, v) => { const ve = vencimento(c, v); if (ve) hay.push(fmt(ve)); };
   if (eq.calibravel) data(eq.calibracao, eq.validade);
@@ -759,7 +784,7 @@ function render() {
     const st = statusSala(sala), c = STATUS_COR[st], e = estadoSala(sala, q), n = sala.equipamentos.length;
     let miss = 0; for (const eq of sala.equipamentos) for (const i of todosItens(eq)) if (!parseISO(i.cal)) miss++;
     const bandH = s >= 34 ? 21 : 17;
-    const bfs = clamp(((b.w * s - 16) / Math.max(1, sala.nome.length)) * 1.7, 9, 14);
+    const bfs = b.w * s < 64 ? letraQueCabe(sala.nome, b.w * s - 11, 12, 5) : letraQueCabe(sala.nome, b.w * s - 18, 14, 5);
     const lines = Math.max(0, Math.floor((b.h * s - 4 - 3 - bandH - 4) / 15));
     const ls = [`${n} ${n === 1 ? 'equipamento' : 'equipamentos'}`];
     if (e.late) ls.push(`<span class="w late">${e.late} ${e.late === 1 ? 'vencido' : 'vencidos'}</span>`);
@@ -775,11 +800,12 @@ function render() {
     const st = statusEq(eq), c = STATUS_COR[st], av = avisos(eq), top = av[0];
     const bandH = s >= 34 ? 21 : 17;
     // Letra do código encolhe para caber na faixa (de 14 px até 9 px).
-    const bfs = eq.w * s < 64 ? clamp(((eq.w * s - 8) * 2 / Math.max(1, (eq.codigo || 'sem código').length)) * 1.6, 8, 11) : clamp(((eq.w * s - 4 - 12) / Math.max(1, (eq.codigo || 'sem código').length)) * 1.7, 9, 14);
+    const bfs = eq.w * s < 64 ? letraQueCabe(eq.codigo || 'sem código', eq.w * s - 4 - 4 - 3, 12, 5) : letraQueCabe(eq.codigo || 'sem código', eq.w * s - 4 - 4 - 10, 14, 5);
     const lines = Math.max(0, Math.floor((eq.h * s - 4 - 3 - bandH - 4) / 15));
     const parts = [];
     let left = lines, flag = '';
-    if (top && left > 0) { parts.push(`<div class="l"><span class="w ${top.s.k}">${esc(textoMapa(top.s))}</span></div>`); left--; }
+    if (st === 'inativo' || st === 'danificado') { if (left > 0) { parts.push(`<div class="l"><span class="w est-${st}">${nomeEstado(st)}</span></div>`); left--; } }
+    else if (top && left > 0) { parts.push(`<div class="l"><span class="w ${top.s.k}">${esc(textoMapa(top.s))}</span></div>`); left--; }
     if (eq.descricao && left > 0) { parts.push(`<div class="l desc">${esc(eq.descricao)}</div>`); left--; }
     const its = eq.itens.map(nomeItem);
     if (its.length && left > 0) {
@@ -926,7 +952,7 @@ function emptyPress(e, panelWasOpen) {
 }
 function criar(x, y) {
   snap();
-  const eq = {id: uid(), codigo:'', descricao:'', calibracao:'', validade:1, anotacao:'', cor:'cinza', x, y, w:1, h:1, calibravel:true, itens:[]};
+  const eq = {id: uid(), codigo:'', descricao:'', calibracao:'', validade:1, anotacao:'', cor:'cinza', x, y, w:1, h:1, calibravel:true, estado:'ativo', itens:[]};
   novo = {id: eq.id, len: undoStack.length};
   R().equipamentos.push(eq);
   changed();
@@ -1045,9 +1071,10 @@ function calHTML(attr, key, cal, val) {
     <div class="st ${st.cls}" data-st="${esc(key)}">${st.html}</div>`;
 }
 function itemHTML(it) {
-  return `<div class="item" data-iid="${esc(it.id)}">
-    <div class="ih"><b data-ititle>${esc(nomeItem(it))}</b>
-      <button class="dots" data-menu title="Mover, duplicar ou excluir" aria-label="Opções do item" aria-haspopup="menu">⋯</button></div>
+  return `<div class="item${it.estado && it.estado !== 'ativo' ? ' fora' : ''}" data-iid="${esc(it.id)}">
+    <div class="ih"><b data-ititle>${esc(nomeItem(it))}</b>${it.estado && it.estado !== 'ativo' ? `<span class="estpill est-${it.estado}">${nomeEstado(it.estado)}</span>` : ''}
+      <button class="dots" data-menu title="Situação, mover, duplicar ou excluir" aria-label="Opções do item" aria-haspopup="menu">⋯</button></div>
+    ${it.estado && it.estado !== 'ativo' ? `<p class="estaviso">${nomeEstado(it.estado)}: não entra nos avisos nem no plano de calibração.</p>` : ''}
     <div class="row2">
       <label class="mini"><span>Código</span><input data-if="codigo" value="${esc(it.codigo)}" placeholder="ex.: TC-01" autocomplete="off"></label>
       <label class="mini"><span>Descrição</span><input data-if="descricao" value="${esc(it.descricao)}" placeholder="ex.: Controle de temperatura" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="sugest"></label>
@@ -1089,6 +1116,8 @@ function buildPanel() {
     ${S.salas.length > 1 ? `<label class="f"><span>Sala</span><select data-mover>${S.salas.map(x => `<option value="${esc(x.id)}"${x.id === S.atual ? ' selected' : ''}>${esc(x.nome || 'Sem nome')}</option>`).join('')}</select></label>` : ''}
     <div class="acts"><button class="btn" data-dupeq title="Cria uma cópia com os mesmos itens, sem as datas">Duplicar equipamento</button><button class="danger" data-del title="Excluir (tecla Delete)">Excluir equipamento</button></div>`;
   $('#ptitle').textContent = eq.codigo ? `Equipamento ${eq.codigo}` : 'Novo equipamento';
+  $('#pestado').innerHTML = eq.estado && eq.estado !== 'ativo' ? `<span class="estpill est-${eq.estado}">${nomeEstado(eq.estado)}</span>` : '';
+  if (eq.estado && eq.estado !== 'ativo') pbody.insertAdjacentHTML('afterbegin', `<p class="estaviso">Equipamento ${nomeEstado(eq.estado).toLowerCase()}: ele e os itens dele não entram nos avisos nem no plano de calibração.</p>`);
 }
 function updStatus() {
   const eq = find(openId); if (!eq) return;
@@ -1228,8 +1257,8 @@ function duplicarEquipamento(eq) {
   if (!pos) return toast('Não há espaço livre na sala. Adicione uma linha ou coluna.', {error:true});
   snap();
   const w = lugarLivre(R(), eq.w, eq.h, eq) ? eq.w : 1, h = w === eq.w ? eq.h : 1;
-  const c = {...eq, id: uid(), codigo: proximoCodigo(eq.codigo), calibracao:'', x:pos.x, y:pos.y, w, h,
-    itens: eq.itens.map(i => ({...i, id: uid(), calibracao:''}))};
+  const c = {...eq, id: uid(), codigo: proximoCodigo(eq.codigo), calibracao:'', estado:'ativo', x:pos.x, y:pos.y, w, h,
+    itens: eq.itens.map(i => ({...i, id: uid(), calibracao:'', estado:'ativo'}))};
   R().equipamentos.push(c);
   closePanel(); changed(); openPanel(c.id);
   toast('Cópia criada com os mesmos itens. Informe as datas de calibração.', {label:'Desfazer', action:undo});
@@ -1255,7 +1284,7 @@ function moverPara(eq, salaId) {
 }
 function novoItem(eq, descricao, validade, codigo, focoCodigo) {
   snap();
-  const it = {id: uid(), codigo: codigo || '', descricao: descricao || '', calibracao:'', validade: validadeDe(validade), obs:''};
+  const it = {id: uid(), codigo: codigo || '', descricao: descricao || '', calibracao:'', validade: validadeDe(validade), obs:'', estado:'ativo'};
   eq.itens.push(it);
   if (descricao) lembrar(descricao, validade, true);
   changed(); refreshPanel();
@@ -1287,32 +1316,56 @@ pbody.addEventListener('click', e => {
 /* ====== Menu do item (⋯) ====== */
 const imenu = $('#imenu');
 function fecharMenuItem() { imenu.hidden = true; imenu.onclick = null; }
-function abrirMenuItem(btn, eq, iid) {
+// Menu pequeno (⋯): opções [{acao, label, check, perigo}] ou 'sep' para separador.
+function abrirMenu(btn, opcoes, aoEscolher) {
+  imenu.innerHTML = opcoes.map(o => o === 'sep' ? '<div class="sep" role="separator"></div>'
+    : `<button data-acao="${o.acao}" role="${o.check === undefined ? 'menuitem' : 'menuitemradio'}"${o.check === undefined ? '' : ` aria-checked="${o.check}"`} class="${o.check === undefined ? '' : 'chk'} ${o.perigo ? 'perigo' : ''}">${esc(o.label)}</button>`).join('');
   const r = btn.getBoundingClientRect();
   imenu.hidden = false;
   imenu.style.left = clamp(r.right - imenu.offsetWidth, 8, innerWidth - imenu.offsetWidth - 8) + 'px';
-  imenu.style.top = (r.bottom + 4 + imenu.offsetHeight > innerHeight - 8 ? r.top - imenu.offsetHeight - 4 : r.bottom + 4) + 'px';
+  imenu.style.top = (r.bottom + 4 + imenu.offsetHeight > innerHeight - 8 ? Math.max(8, r.top - imenu.offsetHeight - 4) : r.bottom + 4) + 'px';
   imenu.querySelector('button').focus({preventScroll:true});
-  imenu.onclick = e => {
-    const a = e.target.closest('[data-acao]'); if (!a) return;
-    fecharMenuItem();
+  imenu.onclick = e => { const a = e.target.closest('[data-acao]'); if (!a) return; fecharMenuItem(); aoEscolher(a.dataset.acao); };
+}
+const opcoesEstado = atual => ESTADOS.map(([v, l]) => ({acao:'estado:' + v, label:l, check: (atual || 'ativo') === v}));
+function abrirMenuItem(btn, eq, iid) {
+  const it0 = eq.itens.find(i => i.id === iid); if (!it0) return;
+  abrirMenu(btn, [...opcoesEstado(it0.estado), 'sep', {acao:'mover', label:'Mover para outra máquina…'}, {acao:'duplicar', label:'Duplicar'}, {acao:'excluir', label:'Excluir item', perigo:true}], acao => {
     const it = eq.itens.find(i => i.id === iid); if (!it) return;
-    if (a.dataset.acao === 'mover') moverItem(eq, it);
-    else if (a.dataset.acao === 'duplicar') duplicarItem(eq, it);
-    else if (a.dataset.acao === 'excluir') {
+    if (acao.startsWith('estado:')) {
+      const v = acao.slice(7); if ((it.estado || 'ativo') === v) return;
+      snap(); it.estado = v; changed(); refreshPanel();
+      toast(`${nomeItem(it)}: ${nomeEstado(v)}`);
+    }
+    else if (acao === 'mover') moverItem(eq, it);
+    else if (acao === 'duplicar') duplicarItem(eq, it);
+    else if (acao === 'excluir') {
       confirmar('Excluir item?', `“${nomeItem(it)}” será removido de ${eq.codigo || 'este equipamento'}.`, 'Excluir').then(ok => {
         if (!ok || !find(eq.id)) return;
         snap(); eq.itens = eq.itens.filter(i => i.id !== iid); changed(); refreshPanel();
         toast('Item excluído', {label:'Desfazer', action:undo});
       });
     }
-  };
+  });
 }
+$('#pmenu').addEventListener('click', e => {
+  const eq = find(openId); if (!eq) return;
+  abrirMenu(e.currentTarget, [...opcoesEstado(eq.estado), 'sep', {acao:'duplicar', label:'Duplicar equipamento'}, {acao:'excluir', label:'Excluir equipamento', perigo:true}], acao => {
+    if (!find(eq.id)) return;
+    if (acao.startsWith('estado:')) {
+      const v = acao.slice(7); if ((eq.estado || 'ativo') === v) return;
+      snap(); eq.estado = v; novo = null; changed(); refreshPanel();
+      toast(`${eq.codigo || 'Equipamento'}: ${nomeEstado(v)}`);
+    }
+    else if (acao === 'duplicar') duplicarEquipamento(eq);
+    else if (acao === 'excluir') pedirExclusaoEquipamento(eq.id);
+  });
+});
 document.addEventListener('pointerdown', e => { if (!imenu.hidden && !imenu.contains(e.target)) fecharMenuItem(); }, true);
 function duplicarItem(eq, o) {
   const i = eq.itens.indexOf(o); if (i < 0) return;
   snap();
-  const c = {...o, id: uid(), codigo: proximoCodigo(o.codigo)};
+  const c = {...o, id: uid(), codigo: proximoCodigo(o.codigo), estado:'ativo'};
   eq.itens.splice(i + 1, 0, c);
   changed(); refreshPanel();
   const el = pbody.querySelector(`[data-iid="${CSS.escape(c.id)}"]`); if (el) el.scrollIntoView({block:'nearest'});
@@ -1618,11 +1671,12 @@ function linhasLista(sala) {
     const its = [...(eq.calibravel ? [{codigo:'', descricao:'Próprio equipamento', obs:'', calibracao:eq.calibracao, validade:eq.validade}] : []), ...eq.itens];
     if (!its.length) its.push(null);
     its.forEach((i, n) => {
-      const s = i && situacao(i.calibracao, i.validade);
+      const fora = eq.estado && eq.estado !== 'ativo' ? 'Equipamento ' + nomeEstado(eq.estado).toLowerCase() : i && i.estado && i.estado !== 'ativo' ? nomeEstado(i.estado) : '';
+      const s = !fora && i && situacao(i.calibracao, i.validade);
       out.push({first: n === 0, eq: eq.codigo || '(sem código)', desc: n === 0 ? eq.descricao : '',
         icod: i ? i.codigo : '', idesc: i ? i.descricao : 'Sem itens calibráveis', obs: i ? i.obs : '',
         cal: i && parseISO(i.calibracao) ? fmt(parseISO(i.calibracao)) : (i ? '—' : ''), val: i ? `${i.validade} ${i.validade === 1 ? 'ano' : 'anos'}` : '',
-        venc: s ? fmt(s.v) : (i ? '—' : ''), sit: s ? textoPainel(s) : (i ? 'Sem data' : ''), k: s ? s.k : (i ? 'miss' : '')});
+        venc: s ? fmt(s.v) : (i && !fora && vencimento(i.calibracao, i.validade) ? fmt(vencimento(i.calibracao, i.validade)) : i ? '—' : ''), sit: fora || (s ? textoPainel(s) : (i ? 'Sem data' : '')), k: fora ? 'inat' : s ? s.k : (i ? 'miss' : '')});
     });
   }
   return out;
@@ -1828,7 +1882,8 @@ function itensDoPlano() {
   for (const x of S.salas) {
     if (planoF.sala && x.id !== planoF.sala) continue;
     for (const eq of x.equipamentos) {
-      const its = [...(eq.calibravel ? [{codigo:'', descricao:'Próprio equipamento', calibracao:eq.calibracao, validade:eq.validade}] : []), ...eq.itens];
+      if (eq.estado && eq.estado !== 'ativo') continue;
+      const its = [...(eq.calibravel ? [{codigo:'', descricao:'Próprio equipamento', calibracao:eq.calibracao, validade:eq.validade}] : []), ...eq.itens.filter(i => !i.estado || i.estado === 'ativo')];
       for (const it of its) {
         const s = situacao(it.calibracao, it.validade); if (!s) continue;
         const v = dnum(s.v);
