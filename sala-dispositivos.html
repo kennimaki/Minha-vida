@@ -1843,7 +1843,7 @@ function endPrint() { if (!printS) return; printS = 0; render(); }
 addEventListener('beforeprint', preparePrint);
 addEventListener('afterprint', endPrint);
 matchMedia('print').addEventListener?.('change', e => e.matches ? preparePrint() : endPrint());
-$('#bPrint').addEventListener('click', () => { closePanel(); if (noClaude) gerarPDF(); else window.print(); });
+$('#bPrint').addEventListener('click', () => { closePanel(); gerarPDF(); });
 
 /* ====== PDF (usado no claude.ai, onde a página não pode abrir a impressão) ====== */
 const JSPDF_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
@@ -1863,16 +1863,53 @@ function cortar(doc, t, maxW) {
   while (t.length > 1 && doc.getTextWidth(t + '…') > maxW) t = t.slice(0, -1);
   return t + '…';
 }
+/* ====== Máscara de impressão TRG (cabeçalho e rodapé em todas as páginas) ====== */
+const LOGO_TRG = 'data:image/png;base64,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';
+const PG = {W:297, H:210, M:10, TOPO:28, BASE:182};   // área útil do conteúdo, entre cabeçalho e rodapé
+const AZUL = [45, 48, 117], AZUL_CLARO = [121, 181, 218];
+function mascara(doc, titulos) {
+  const {W, H} = PG, n = doc.getNumberOfPages(), L = 5, R2 = W - 5, T = 5, B = H - 5;
+  for (let i = 1; i <= n; i++) {
+    doc.setPage(i);
+    // faixas do topo e moldura
+    doc.setFillColor(...AZUL); doc.rect(L, T, R2 - L, 2.6, 'F');
+    doc.setFillColor(...AZUL_CLARO); doc.rect(L, T + 2.6, R2 - L, 2.2, 'F');
+    doc.setDrawColor(...AZUL); doc.setLineWidth(0.5); doc.rect(L, T, R2 - L, B - T);
+    // cabeçalho: título e quadro com emissão e página
+    const hy = T + 4.8, hb = hy + 14, qx = R2 - 46;
+    doc.setDrawColor(30, 30, 30); doc.setLineWidth(0.3); doc.line(L, hb, R2, hb); doc.line(qx, hy, qx, hb);
+    const titulo = String(titulos[i - 1] || titulos[titulos.length - 1] || '').toUpperCase();
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10); const w10 = doc.getTextWidth(titulo) || 1;
+    doc.setFontSize(clamp(10 * (qx - L - 12) / w10, 8, 16));
+    doc.text(titulo, (L + qx) / 2, hy + 9.2, {align:'center'});
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(30, 30, 30);
+    doc.text(`Emitido em ${fmt(hoje())}`, (qx + R2) / 2, hy + 5.6, {align:'center'});
+    doc.text(`Página ${i} de ${n}`, (qx + R2) / 2, hy + 10, {align:'center'});
+    // rodapé: linha, logo, site e endereço
+    const fy = PG.BASE + 4.5;
+    doc.setDrawColor(...AZUL); doc.setLineWidth(0.9); doc.line(L, fy, R2, fy);
+    try { doc.addImage(LOGO_TRG, 'PNG', L + 3, fy + 2.2, 42, 13); } catch (e) {}
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...AZUL);
+    doc.text('trgpinturas.com.br', W / 2, fy + 10, {align:'center'});
+    const ex = R2 - 2.5; let ey = fy + 3.6;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...AZUL); doc.text('Rua Tuiuti, 4815', ex, ey, {align:'right'});
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(40, 40, 40);
+    for (const t of ['Aventureiro', 'Joinville – SC', 'CEP: 89226 002', 'Fone +55 47 3029 8600']) { ey += 2.9; doc.text(t, ex, ey, {align:'right'}); }
+  }
+  return doc;
+}
 function pdfDoc(jspdf) {
   const doc = new jspdf.jsPDF({orientation:'landscape', unit:'mm', format:'a4'});
-  const sala = R(), W = 297, H = 210, M = 10;
-  // Página 1: mapa
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(29, 36, 33); doc.text(sala.nome || 'Sala', M, M + 5);
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(90, 100, 95);
-  doc.text(`Impresso em ${fmt(hoje())} · Verde: em dia · Amarelo: vence em até ${AVISO_DIAS} dias · Vermelho: vencido · Cinza: sem data`, W - M, M + 5, {align:'right'});
-  const top = M + 10, c = Math.min((W - 2 * M) / sala.cols, (H - top - M) / sala.rows);
+  const sala = R(), {W, M} = PG, H = PG.BASE + M;
+  const titulos = [isGeral() ? 'Layout geral da fábrica' : `Layout · ${sala.nome || 'Sala'}`];
+  // Página 1: mapa (legenda em cima, mapa centralizado na área útil)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(90, 100, 95);
+  doc.text(`Verde: em dia · Amarelo: vence em até ${AVISO_DIAS} dias · Vermelho: vencido · Cinza: sem data · Inativo · Danificado`, M, PG.TOPO);
+  const top = PG.TOPO + 3, c = Math.min((W - 2 * M) / sala.cols, (PG.BASE - top) / sala.rows);
+  const X0 = M + ((W - 2 * M) - sala.cols * c) / 2;
   // Sem grade na impressão: só o contorno da sala.
-  doc.setDrawColor(190, 197, 189); doc.setLineWidth(0.3); doc.rect(M, top, sala.cols * c, sala.rows * c);
+  doc.setDrawColor(190, 197, 189); doc.setLineWidth(0.3); doc.rect(X0, top, sala.cols * c, sala.rows * c);
   // Faixa com o código em uma linha, letra ajustada à largura (como na tela).
   // Mesma regra da tela: objeto estreito (1 espaço) vira um bloco inteiro colorido com o código no centro.
   const faixa = (texto, x, y, w, h, col, larguraCasas) => {
@@ -1891,7 +1928,7 @@ function pdfDoc(jspdf) {
   };
   const fs = clamp(c * 1.15, 4.5, 9), lh = fs * 0.3528 * 1.3;
   for (const eq of (isGeral() ? [] : sala.equipamentos)) {
-    const col = STATUS_COR[statusEq(eq)], x = M + eq.x * c + 0.5, y = top + eq.y * c + 0.5, w = eq.w * c - 1, h = eq.h * c - 1;
+    const col = STATUS_COR[statusEq(eq)], x = X0 + eq.x * c + 0.5, y = top + eq.y * c + 0.5, w = eq.w * c - 1, h = eq.h * c - 1;
     doc.setFillColor(...rgb(col.fill)); doc.setDrawColor(...rgb(col.bd)); doc.setLineWidth(0.5);
     doc.roundedRect(x, y, w, h, 1, 1, 'FD');
     const bh = faixa(eq.codigo || 'sem código', x, y, w, h, col, eq.w);
@@ -1910,7 +1947,7 @@ function pdfDoc(jspdf) {
   if (isGeral()) { // blocos das salas e resumo
     for (const b of sala.equipamentos) {
       const x0 = S.salas.find(z => z.id === b.id); if (!x0) continue;
-      const col = STATUS_COR[statusSala(x0)], e = estadoSala(x0, ''), x = M + b.x * c + 0.5, y = top + b.y * c + 0.5, w = b.w * c - 1, h = b.h * c - 1;
+      const col = STATUS_COR[statusSala(x0)], e = estadoSala(x0, ''), x = X0 + b.x * c + 0.5, y = top + b.y * c + 0.5, w = b.w * c - 1, h = b.h * c - 1;
       doc.setFillColor(...rgb(col.fill)); doc.setDrawColor(...rgb(col.bd)); doc.setLineWidth(0.5); doc.roundedRect(x, y, w, h, 1, 1, 'FD');
       const bh = faixa(x0.nome, x, y, w, h, col, b.w);
       let ly = y + bh + lh * 0.8, left = Math.max(0, Math.floor((h - bh - 1) / lh));
@@ -1918,11 +1955,10 @@ function pdfDoc(jspdf) {
         if (!t || left <= 0) continue; doc.setFont('helvetica', 'normal'); doc.setFontSize(fs); doc.setTextColor(...cor); doc.text(cortar(doc, t, w - 2), x + 1, ly); ly += lh; left--;
       }
     }
-    doc.addPage();
+    doc.addPage(); titulos.push('Resumo das salas');
     const cg = [70, 44, 30, 34, 26, 40, 0]; cg[6] = W - 2 * M - cg.reduce((a, v) => a + v, 0);
-    let yy = M + 5;
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(29, 36, 33); doc.text('Layout geral · resumo das salas', M, yy);
-    yy += 5; doc.setFillColor(47, 107, 85); doc.rect(M, yy, W - 2 * M, 6, 'F');
+    let yy = PG.TOPO - 3;
+    doc.setFillColor(...AZUL); doc.rect(M, yy, W - 2 * M, 6, 'F');
     doc.setFontSize(7.5); doc.setTextColor(255, 255, 255);
     let xx = M; COLS_GERAL.forEach((t, i) => { doc.text(t, xx + 1.2, yy + 4.1); xx += cg[i]; }); yy += 6;
     for (const r of linhasGeral()) {
@@ -1933,23 +1969,19 @@ function pdfDoc(jspdf) {
         doc.text(cortar(doc, t, cg[i] - 2.4), xx + 1.2, yy + 4); xx += cg[i];
       });
       yy += 6.5; doc.setDrawColor(226, 229, 224); doc.setLineWidth(0.15); doc.line(M, yy, W - M, yy);
-      if (yy > H - M - 8) { doc.addPage(); yy = M + 5; }
+      if (yy > PG.BASE - 8) { doc.addPage(); titulos.push('Resumo das salas'); yy = PG.TOPO; }
     }
-    const npg = doc.getNumberOfPages();
-    for (let i = 1; i <= npg; i++) { doc.setPage(i); doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(120, 128, 124); doc.text(`Página ${i} de ${npg}`, W - M, H - 4, {align:'right'}); }
-    return doc;
+    return mascara(doc, titulos);
   }
   // Páginas seguintes: lista
-  doc.addPage();
+  doc.addPage(); titulos.push(`Lista de equipamentos · ${sala.nome}`);
   const cw = [24, 36, 24, 44, 50, 20, 14, 20, 0]; cw[8] = W - 2 * M - cw.reduce((a, b) => a + b, 0);
-  let y = M + 5;
+  let y = PG.TOPO;
   const cab = cont => {
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(29, 36, 33);
-    doc.text(`Lista de equipamentos · ${sala.nome}${cont ? ' (continuação)' : ''}`, M, y);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(90, 100, 95);
-    doc.text(`Impresso em ${fmt(hoje())} · ${resumoLista(sala)}`, M, y + 5);
-    y += 9;
-    doc.setFillColor(47, 107, 85); doc.rect(M, y, W - 2 * M, 6, 'F');
+    doc.text(resumoLista(sala) + (cont ? ' · continuação' : ''), M, y);
+    y += 2.5;
+    doc.setFillColor(...AZUL); doc.rect(M, y, W - 2 * M, 6, 'F');
     doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(255, 255, 255);
     let x = M; COLS_LISTA.forEach((t, i) => { doc.text(t, x + 1.2, y + 4.1); x += cw[i]; });
     y += 6;
@@ -1961,7 +1993,7 @@ function pdfDoc(jspdf) {
     doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5);
     const wrapped = cells.map((t, i) => doc.splitTextToSize(String(t || ''), cw[i] - 2.4));
     const rh = Math.max(1, ...wrapped.map(l => l.length)) * 3.2 + 1.8;
-    if (y + rh > H - M) { doc.addPage(); y = M + 5; cab(true); doc.setFontSize(7.5); }
+    if (y + rh > PG.BASE) { doc.addPage(); titulos.push(`Lista de equipamentos · ${sala.nome}`); y = PG.TOPO; cab(true); doc.setFontSize(7.5); }
     if (r.first) { doc.setDrawColor(154, 165, 157); doc.setLineWidth(0.35); doc.line(M, y, W - M, y); }
     let x = M;
     wrapped.forEach((ls, i) => {
@@ -1974,25 +2006,32 @@ function pdfDoc(jspdf) {
     y += rh;
     doc.setDrawColor(226, 229, 224); doc.setLineWidth(0.15); doc.line(M, y, W - M, y);
   }
-  const np = doc.getNumberOfPages();
-  for (let i = 1; i <= np; i++) { doc.setPage(i); doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(120, 128, 124); doc.text(`Página ${i} de ${np}`, W - M, H - 4, {align:'right'}); }
-  return doc;
+  return mascara(doc, titulos);
 }
-async function gerarPDF() {
-  const b = $('#bPrint'); b.disabled = true; const txt = b.textContent; b.textContent = 'Gerando PDF…';
+// Gera o PDF com a máscara. No claude.ai, entrega pelo download do próprio claude.ai;
+// no arquivo aberto direto, abre o PDF numa aba nova; sem internet, usa a impressão do navegador.
+async function entregarPDF(botao, gerar, nome, semInternet) {
+  const aba = noClaude ? null : window.open('', '_blank');
+  const txt = botao.textContent; botao.disabled = true; botao.textContent = 'Gerando PDF…';
   try {
-    const doc = pdfDoc(await carregarJsPDF());
-    const d = new Date(), slug = norm(R().nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'sala';
-    const nome = `${slug}-${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}.pdf`;
-    const dl = downloadsP ? await downloadsP : null;
-    if (dl) {
-      await dl.save({filename:nome, data:doc.output('arraybuffer')}).then(
+    const doc = gerar(await carregarJsPDF());
+    if (noClaude) {
+      const dl = downloadsP ? await downloadsP : null;
+      if (dl) await dl.save({filename:nome, data:doc.output('arraybuffer')}).then(
         () => toast('PDF pronto. Abra o arquivo e use Imprimir.'),
         err => { if (err && err.code !== 'declined') toast('Não foi possível salvar o PDF aqui. Tente em um navegador.', {error:true}); });
-    } else doc.save(nome);
+      else doc.save(nome);
+    } else if (aba) { aba.location.href = doc.output('bloburl'); }
+    else doc.save(nome);
   } catch (e) {
-    toast('Não foi possível gerar o PDF. Verifique a internet e tente de novo.', {error:true});
-  } finally { b.disabled = false; b.textContent = txt; }
+    if (aba) aba.close();
+    if (!noClaude && semInternet) { toast('Sem internet para montar o PDF com o cabeçalho: usando a impressão simples.'); semInternet(); }
+    else toast('Não foi possível gerar o PDF. Verifique a internet e tente de novo.', {error:true});
+  } finally { botao.disabled = false; botao.textContent = txt; }
+}
+function gerarPDF() {
+  const d = new Date(), slug = norm(R().nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'sala';
+  return entregarPDF($('#bPrint'), pdfDoc, `${slug}-${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}.pdf`, () => window.print());
 }
 
 /* ====== Plano de calibração ====== */
@@ -2081,16 +2120,15 @@ function linhasPlanoTabela() {
 }
 function subtituloPlano() {
   const n = itensDoPlano().length;
-  return `Período: ${fmt(parseISO(planoF.de))} a ${fmt(parseISO(planoF.ate))} · ${nomeSalaFiltro()}${planoF.vencidos ? ' · inclui vencidos' : ''} · ${n} ${n === 1 ? 'item' : 'itens'} · impresso em ${fmt(hoje())}`;
+  return `Período: ${fmt(parseISO(planoF.de))} a ${fmt(parseISO(planoF.ate))} · ${nomeSalaFiltro()}${planoF.vencidos ? ' · inclui vencidos' : ''} · ${n} ${n === 1 ? 'item' : 'itens'}`;
 }
 function pdfPlano(jspdf) {
   const doc = new jspdf.jsPDF({orientation:'landscape', unit:'mm', format:'a4'});
-  const W = 297, H = 210, M = 10, cw = [22, 30, 34, 26, 40, 24, 54, 22, 0]; cw[8] = W - 2 * M - cw.reduce((a, b) => a + b, 0);
-  let y = M + 5;
+  const {W, M} = PG, cw = [22, 30, 34, 26, 40, 24, 54, 22, 0]; cw[8] = W - 2 * M - cw.reduce((a, b) => a + b, 0);
+  let y = PG.TOPO;
   const cab = cont => {
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(29, 36, 33); doc.text('Plano de calibração' + (cont ? ' (continuação)' : ''), M, y);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(90, 100, 95); doc.text(subtituloPlano(), M, y + 5);
-    y += 9; doc.setFillColor(47, 107, 85); doc.rect(M, y, W - 2 * M, 6, 'F');
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(90, 100, 95); doc.text(subtituloPlano() + (cont ? ' · continuação' : ''), M, y);
+    y += 2.5; doc.setFillColor(...AZUL); doc.rect(M, y, W - 2 * M, 6, 'F');
     doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(255, 255, 255);
     let x = M; COLS_PLANO.forEach((t, i) => { doc.text(t, x + 1.2, y + 4.1); x += cw[i]; }); y += 6;
   };
@@ -2101,7 +2139,7 @@ function pdfPlano(jspdf) {
     doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5);
     const wr = r.cells.map((t, i) => doc.splitTextToSize(String(t || ''), cw[i] - 2.4));
     const rh = Math.max(...wr.map(l => l.length)) * 3.2 + 1.8;
-    if (y + rh > H - M) { doc.addPage(); y = M + 5; cab(true); }
+    if (y + rh > PG.BASE) { doc.addPage(); y = PG.TOPO; cab(true); }
     let x = M;
     wr.forEach((ls, i) => {
       const cor = i === 1 ? (r.k === 'late' ? [194, 39, 39] : r.k === 'ok' ? [46, 125, 79] : [180, 95, 0]) : [29, 36, 33];
@@ -2110,30 +2148,18 @@ function pdfPlano(jspdf) {
     });
     y += rh; doc.setDrawColor(226, 229, 224); doc.setLineWidth(0.15); doc.line(M, y, W - M, y);
   }
-  const np = doc.getNumberOfPages();
-  for (let i = 1; i <= np; i++) { doc.setPage(i); doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(120, 128, 124); doc.text(`Página ${i} de ${np}`, W - M, H - 4, {align:'right'}); }
-  return doc;
+  return mascara(doc, ['Plano de calibração']);
 }
-$('#plImprimir').addEventListener('click', async () => {
+$('#plImprimir').addEventListener('click', () => {
   if (!parseISO(planoF.de) || !parseISO(planoF.ate)) return toast('Escolha as duas datas do período.', {error:true});
-  if (!noClaude) {
+  entregarPDF($('#plImprimir'), pdfPlano, `plano-de-calibracao-${planoF.de}-a-${planoF.ate}.pdf`, () => {
     $('#plprint').innerHTML = `<h2>Plano de calibração</h2><p>${esc(subtituloPlano())}</p><table><thead><tr>${COLS_PLANO.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${
       linhasPlanoTabela().map(r => `<tr>${r.cells.map((c, i) => `<td class="${i === 1 ? r.k : ''}">${esc(c)}</td>`).join('')}</tr>`).join('') || '<tr><td colspan="9">Nenhum item vence neste período.</td></tr>'}</tbody></table>`;
     document.body.classList.add('imprimindo-plano');
     const fim = () => { document.body.classList.remove('imprimindo-plano'); removeEventListener('afterprint', fim); };
     addEventListener('afterprint', fim);
     window.print();
-    return;
-  }
-  const b = $('#plImprimir'), txt = b.textContent; b.disabled = true; b.textContent = 'Gerando PDF…';
-  try {
-    const doc = pdfPlano(await carregarJsPDF());
-    const nome = `plano-de-calibracao-${planoF.de}-a-${planoF.ate}.pdf`;
-    const dl = downloadsP ? await downloadsP : null;
-    if (dl) await dl.save({filename:nome, data:doc.output('arraybuffer')}).then(() => toast('PDF do plano pronto. Abra o arquivo e use Imprimir.'), err => { if (err && err.code !== 'declined') toast('Não foi possível salvar o PDF aqui.', {error:true}); });
-    else doc.save(nome);
-  } catch (e) { toast('Não foi possível gerar o PDF. Verifique a internet e tente de novo.', {error:true}); }
-  finally { b.disabled = false; b.textContent = txt; }
+  });
 });
 
 /* ====== Teclado global ====== */
