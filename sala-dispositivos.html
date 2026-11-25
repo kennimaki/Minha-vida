@@ -498,12 +498,13 @@ function parseISO(s) {
   const o = {y:+m[1], m:+m[2], d:+m[3]};
   return (o.m >= 1 && o.m <= 12 && o.d >= 1 && o.d <= daysIn(o.y, o.m)) ? o : null;
 }
-// Vencimento = data de calibração + 365 dias por ano de validade.
+// Vencimento = mesmo dia e mês, somando os anos de validade (01/01/2026 + 3 anos = 01/01/2029).
+// Calibração em 29/02 vence em 28/02 quando o ano final não tem 29 de fevereiro.
 function vencimento(cal, anos) {
   const p = parseISO(cal); if (!p) return null;
-  const n = [1,2,3].includes(+anos) ? +anos : 1;
-  const t = new Date(Date.UTC(p.y, p.m - 1, p.d) + n * 365 * 864e5);
-  return {y:t.getUTCFullYear(), m:t.getUTCMonth() + 1, d:t.getUTCDate()};
+  const y = p.y + ([1,2,3].includes(+anos) ? +anos : 1);
+  const d = p.m === 2 && p.d === 29 && !leap(y) ? 28 : p.d;
+  return {y, m:p.m, d};
 }
 const dnum = o => Date.UTC(o.y, o.m - 1, o.d) / 864e5;
 function hoje() { const t = new Date(); return {y:t.getFullYear(), m:t.getMonth() + 1, d:t.getDate()}; }
