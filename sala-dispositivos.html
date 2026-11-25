@@ -45,6 +45,24 @@ header .top .status{margin-left:auto}
 .btn.primary:hover{background:#265a47}
 .status{font-size:12px;color:var(--muted)}
 .status.err{color:var(--late);font-weight:600}
+.bar{display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap;padding:6px 16px;background:var(--surface);border-bottom:1px solid var(--line)}
+.tabs{display:flex;gap:4px;overflow-x:auto;min-width:0;flex:1 1 auto;scrollbar-width:thin}
+.tab{border:1px solid transparent;background:transparent;border-radius:8px;padding:6px 12px;white-space:nowrap;color:var(--muted);display:flex;align-items:center;gap:6px}
+.tab:hover{background:#f1f3ef;color:var(--ink)}
+.tab[aria-selected="true"]{background:#e6efe9;border-color:#bcd3c5;color:var(--acc);font-weight:650}
+.tab.add{color:var(--acc);border:1px dashed #b7c9bd}
+.tab .n{font-size:11.5px;background:#eef0ec;color:var(--muted);border-radius:999px;padding:0 7px;font-weight:600}
+.tab .hitn{background:#dbe6f7;color:var(--focus)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.dot.late{background:var(--late)} .dot.soon{background:var(--warn)}
+.sizectl{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.sizectl .lbl{font-size:12.5px;color:var(--muted);margin-left:6px}
+.sizectl output{min-width:24px;text-align:center;font-variant-numeric:tabular-nums;font-weight:600}
+.sb{width:30px;height:30px;border:1px solid var(--line);background:var(--surface);border-radius:7px;font-size:17px;line-height:1;padding:0}
+.sb:hover{background:#f1f3ef}
+.sb:disabled{opacity:.4;cursor:default}
+.btn.small{padding:5px 10px;font-size:12.5px;margin-left:8px}
+#bDelSala{color:var(--late)}
 .hint{padding:6px 16px;font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--line);background:#f8f9f6}
 
 /* Mapa */
@@ -139,7 +157,7 @@ body.sheet-open #map{padding-bottom:75vh}
 #toast.err button{color:#fff;text-decoration:underline}
 #printhead{display:none}
 
-@media (pointer:coarse){.eq .rz{width:24px;height:24px}.edge.r{width:20px;right:-22px}.edge.b{height:20px;bottom:-22px}.edge.c{width:26px;height:26px;right:-26px;bottom:-26px}}
+@media (pointer:coarse){.eq .rz{width:min(24px,40%);height:min(24px,40%)}.edge.r{width:20px;right:-22px}.edge.b{height:20px;bottom:-22px}.edge.c{width:26px;height:26px;right:-26px;bottom:-26px}}
 @media (max-width:700px){
   header{padding:8px 12px}
   header .top .status:not(.err){display:none}
@@ -151,12 +169,23 @@ body.sheet-open #map{padding-bottom:75vh}
   .searchbox{flex:1 1 100%} #q{width:100%}
   input,select,textarea{font-size:16px!important}
   #map{padding:16px 30px 30px 16px}
+  .bar{padding:6px 12px}
+  .tabs{flex-basis:100%}
+  .tab{max-width:70vw}
+  .tab .nm{overflow:hidden;text-overflow:ellipsis}
+  .bar .lg{display:none}
+  .sizectl{width:100%;flex-wrap:nowrap}
+  .sb{width:32px;height:32px}
+  .btn.small{margin-left:auto}
+  .hint{display:none}
+  header{gap:4px}
+  .sizectl .lbl{margin-left:0}
   .hint{padding:6px 12px}
 }
 @media print{
   @page{size:A4 landscape;margin:10mm}
   html,body{height:auto;overflow:visible;background:#fff;display:block;padding:0}
-  header,.hint,#panel,#toast,.edge,.rz,#ghost,#hover,#sizeTag,.empty{display:none!important}
+  header,.bar,.hint,#panel,#toast,.edge,.rz,#ghost,#hover,#sizeTag,.empty{display:none!important}
   #printhead{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 6px;font-size:12px}
   #printhead h1{font-size:16px;margin:0}
   #map{overflow:visible;padding:0}
@@ -169,7 +198,7 @@ body.sheet-open #map{padding-bottom:75vh}
 <body>
 <header>
   <div class="top">
-    <input id="roomName" aria-label="Nome da sala" maxlength="80" spellcheck="false">
+    <input id="roomName" aria-label="Nome da sala" title="Nome da sala (toque para renomear)" maxlength="80" spellcheck="false">
     <div class="summary" id="summary"></div>
     <span class="status" id="status"></span>
   </div>
@@ -186,6 +215,14 @@ body.sheet-open #map{padding-bottom:75vh}
     <input type="file" id="file" accept=".json,application/json" hidden>
   </div>
 </header>
+<nav class="bar" aria-label="Salas">
+  <div class="tabs" id="tabs"></div>
+  <div class="sizectl">
+    <span class="lbl">Col<span class="lg">unas</span></span><button class="sb" data-size="c-" aria-label="Remover uma coluna" title="Remover a última coluna">−</button><output id="nCols"></output><button class="sb" data-size="c+" aria-label="Adicionar uma coluna" title="Adicionar uma coluna">+</button>
+    <span class="lbl">Lin<span class="lg">has</span></span><button class="sb" data-size="r-" aria-label="Remover uma linha" title="Remover a última linha">−</button><output id="nRows"></output><button class="sb" data-size="r+" aria-label="Adicionar uma linha" title="Adicionar uma linha">+</button>
+    <button class="btn small" id="bDelSala" title="Apagar esta sala e os equipamentos dela">Apagar<span class="lg"> sala</span></button>
+  </div>
+</nav>
 <div class="hint" id="hint"></div>
 <main id="map">
   <div id="printhead"><h1 id="phName"></h1><span id="phInfo"></span></div>
@@ -227,7 +264,7 @@ const panel = $('#panel'), pbody = $('#pbody'), qEl = $('#q');
 const coarse = matchMedia('(pointer:coarse)').matches;
 const narrowMQ = matchMedia('(max-width:700px)');
 
-let S, openId = null, gesture = null, frozenS = 0, printS = 0, curS = 40, query = '';
+let S, novo = null, openId = null, gesture = null, frozenS = 0, printS = 0, curS = 40, query = '';
 const undoStack = []; let lastKey = null;
 
 /* ====== Utilidades ====== */
@@ -235,7 +272,8 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const find = id => S.equipamentos.find(e => e.id === id);
+const R = () => S.salas.find(x => x.id === S.atual) || S.salas[0];
+const find = id => R().equipamentos.find(e => e.id === id);
 const overlap = (o, x, y, w, h) => x < o.x + o.w && o.x < x + w && y < o.y + o.h && o.y < y + h;
 
 /* ====== Datas e calibração ====== */
@@ -283,7 +321,8 @@ function avisos(eq) {
 }
 
 /* ====== Dados: carregar, validar, converter ====== */
-function blank() { return {versao:2, sala:{nome:'Sala de dispositivos', cols:16, rows:10}, equipamentos:[]}; }
+function novaSala(nome) { return {id: uid(), nome, cols:16, rows:10, equipamentos:[]}; }
+function blank() { const s = novaSala('Sala de dispositivos'); return {versao:3, salas:[s], atual:s.id}; }
 function str(v) { return v == null ? '' : (typeof v === 'object' ? '' : String(v)).trim(); }
 function int(v, def) { if (v == null || v === '' || typeof v === 'boolean') return def; const n = Number(v); return Number.isFinite(n) ? Math.round(n) : def; }
 function isoDe(v) {
@@ -301,19 +340,32 @@ const pick = (o, ...ks) => { for (const k of ks) if (o[k] != null && o[k] !== ''
 
 function normalize(d) {
   if (!d || typeof d !== 'object') throw new Error('O arquivo não contém dados da sala.');
+  const ids = new Set();
+  let salas;
+  if (!Array.isArray(d) && Array.isArray(d.salas)) {
+    if (!d.salas.length) throw new Error('O arquivo não tem nenhuma sala.');
+    salas = d.salas.map((x, i) => {
+      if (!x || typeof x !== 'object' || Array.isArray(x)) throw new Error(`A sala ${i + 1} do arquivo não é válida.`);
+      return normalizeSala(x, ids);
+    });
+  } else salas = [normalizeSala(d, ids)];
+  const sids = new Set();
+  for (const x of salas) { if (!x.id || sids.has(x.id)) x.id = uid(); sids.add(x.id); }
+  return {versao:3, salas, atual: salas.some(x => x.id === d.atual) ? d.atual : salas[0].id};
+}
+function normalizeSala(d, ids) {
   let list, sala = {};
   if (Array.isArray(d)) list = d;
   else {
     list = pick(d, 'equipamentos', 'equipments', 'dispositivos', 'itens', 'items');
-    sala = (d.sala && typeof d.sala === 'object') ? d.sala : (d.room && typeof d.room === 'object' ? d.room : {});
+    sala = (d.sala && typeof d.sala === 'object') ? d.sala : (d.room && typeof d.room === 'object' ? d.room : d);
     if (list === undefined && Array.isArray(sala.equipamentos)) list = sala.equipamentos;
-    if (list === undefined && (d.sala || d.versao)) list = [];
+    if (list === undefined && (d.sala || d.versao || d.nome || d.cols)) list = [];
   }
   if (!Array.isArray(list)) throw new Error('O arquivo não tem a lista de equipamentos.');
   let cols = clamp(int(pick(sala, 'cols', 'colunas', 'largura'), 16), 2, MAX);
   let rows = clamp(int(pick(sala, 'rows', 'linhas', 'altura'), 10), 2, MAX);
-  const out = {versao:2, sala:{nome: str(pick(sala, 'nome', 'name') ?? d.nome) || 'Sala de dispositivos', cols, rows}, equipamentos:[]};
-  const ids = new Set();
+  const out = {id: str(d.id), nome: str(pick(sala, 'nome', 'name') ?? d.nome) || 'Sala de dispositivos', cols, rows, equipamentos:[]};
   const novoId = v => { let id = str(v); if (!id || ids.has(id)) id = uid(); ids.add(id); return id; };
 
   const eqs = list.map((raw, i) => {
@@ -366,7 +418,7 @@ function normalize(d) {
     if (!ok) throw new Error('Os equipamentos do arquivo não cabem em uma sala de 60 × 60.');
     placed.push(e);
   }
-  out.sala.cols = cols; out.sala.rows = rows; out.equipamentos = eqs;
+  out.cols = cols; out.rows = rows; out.equipamentos = eqs;
   return out;
 }
 
@@ -405,7 +457,7 @@ function cellSize() {
   if (printS) return printS;
   if (frozenS) return frozenS;
   const W = mapEl.clientWidth - 70, H = mapEl.clientHeight - 70;
-  const s = Math.floor(Math.min(W / S.sala.cols, H / S.sala.rows));
+  const s = Math.floor(Math.min(W / R().cols, H / R().rows));
   return clamp(s, coarse ? 36 : 30, 64);
 }
 function matchEq(eq, q) {
@@ -420,11 +472,11 @@ function matchEq(eq, q) {
 }
 function render() {
   const s = cellSize(); curS = s;
-  const {cols, rows} = S.sala;
+  const {cols, rows} = R();
   room.style.width = cols * s + 'px'; room.style.height = rows * s + 'px';
   room.style.backgroundSize = `${s}px ${s}px`;
   const q = norm(query); let hits = 0;
-  layer.innerHTML = S.equipamentos.map(eq => {
+  layer.innerHTML = R().equipamentos.map(eq => {
     const c = colorOf(eq.cor), av = avisos(eq), top = av[0];
     const lines = Math.max(1, Math.floor((eq.h * s - 4 - 9) / 15));
     const parts = [`<div class="l code">${eq.codigo ? esc(eq.codigo) : '<span class="none">sem código</span>'}</div>`];
@@ -449,17 +501,40 @@ function render() {
     if (q) { if (matchEq(eq, q)) { cls += ' hit'; hits++; } else cls += ' dim'; }
     if (eq.id === openId) cls += ' sel';
     return `<div class="${cls}" data-id="${esc(eq.id)}" tabindex="0" title="${esc(tip)}" style="left:${eq.x * s + 2}px;top:${eq.y * s + 2}px;width:${eq.w * s - 4}px;height:${eq.h * s - 4}px;--fill:${c.fill};--bd:${c.bd}">${parts.join('')}${flag}<span class="rz" data-rz title="Arraste para mudar o tamanho"></span></div>`;
-  }).join('') + (S.equipamentos.length ? '' : `<div class="empty">${coarse ? 'Toque' : 'Clique'} em um espaço vazio para criar o primeiro equipamento.</div>`);
+  }).join('') + (R().equipamentos.length ? '' : `<div class="empty">${coarse ? 'Toque em um espaço vazio para criar o primeiro equipamento.<br>Depois: toque para editar, segure e arraste para mover.' : 'Clique em um espaço vazio para criar o primeiro equipamento.'}</div>`);
   const qc = $('#qcount');
   qc.textContent = q ? (hits === 0 ? 'Nada encontrado' : hits === 1 ? '1 encontrado' : `${hits} encontrados`) : '';
   $('#qclear').hidden = !query;
-  if (document.activeElement !== $('#roomName')) $('#roomName').value = S.sala.nome;
-  document.title = (S.sala.nome || 'Sala') + ' · Sala de Dispositivos';
-  resumo();
+  if (document.activeElement !== $('#roomName')) $('#roomName').value = R().nome;
+  document.title = (R().nome || 'Sala') + ' · Sala de Dispositivos';
+  resumo(); renderTabs();
+}
+function estadoSala(sala, q) {
+  let late = 0, soon = 0, hits = 0;
+  for (const eq of sala.equipamentos) {
+    for (const i of todosItens(eq)) { const s = situacao(i.cal, i.val); if (s && s.k === 'late') late++; else if (s && s.k !== 'ok') soon++; }
+    if (q && matchEq(eq, q)) hits++;
+  }
+  return {late, soon, hits};
+}
+function renderTabs() {
+  const q = norm(query), atual = R();
+  $('#tabs').innerHTML = S.salas.map(x => {
+    const e = estadoSala(x, q), sel = x.id === atual.id;
+    const dot = e.late ? '<span class="dot late" title="Tem item vencido"></span>' : e.soon ? '<span class="dot soon" title="Tem item a vencer"></span>' : '';
+    const n = q ? `<span class="n hitn" title="Encontrados nesta sala">${e.hits}</span>` : `<span class="n" title="Equipamentos">${x.equipamentos.length}</span>`;
+    return `<button class="tab" role="tab" data-sala="${esc(x.id)}" aria-selected="${sel}">${dot}<span class="nm">${esc(x.nome || 'Sem nome')}</span>${n}</button>`;
+  }).join('') + '<button class="tab add" id="bNovaSala" title="Criar outra sala ou setor">+ Nova sala</button>';
+  $('#nCols').textContent = atual.cols; $('#nRows').textContent = atual.rows;
+  const occC = Math.max(0, ...atual.equipamentos.map(o => o.x + o.w)), occR = Math.max(0, ...atual.equipamentos.map(o => o.y + o.h));
+  document.querySelector('[data-size="c+"]').disabled = atual.cols >= MAX;
+  document.querySelector('[data-size="r+"]').disabled = atual.rows >= MAX;
+  document.querySelector('[data-size="c-"]').disabled = atual.cols <= 2;
+  document.querySelector('[data-size="r-"]').disabled = atual.rows <= 2;
 }
 function resumo() {
-  let late = 0, soon = 0, n = S.equipamentos.length;
-  for (const eq of S.equipamentos) for (const i of todosItens(eq)) {
+  let late = 0, soon = 0, n = R().equipamentos.length;
+  for (const eq of R().equipamentos) for (const i of todosItens(eq)) {
     const s = situacao(i.cal, i.val); if (!s) continue;
     if (s.k === 'late') late++; else if (s.k !== 'ok') soon++;
   }
@@ -474,10 +549,10 @@ function cellAt(cx, cy) {
   const r = room.getBoundingClientRect();
   return {x: Math.floor((cx - r.left) / curS), y: Math.floor((cy - r.top) / curS)};
 }
-function occupied(x, y) { return S.equipamentos.some(o => x >= o.x && x < o.x + o.w && y >= o.y && y < o.y + o.h); }
+function occupied(x, y) { return R().equipamentos.some(o => x >= o.x && x < o.x + o.w && y >= o.y && y < o.y + o.h); }
 function canPlace(id, x, y, w, h, allowSwap) {
-  if (x < 0 || y < 0 || x + w > S.sala.cols || y + h > S.sala.rows) return {ok:false};
-  const hits = S.equipamentos.filter(o => o.id !== id && overlap(o, x, y, w, h));
+  if (x < 0 || y < 0 || x + w > R().cols || y + h > R().rows) return {ok:false};
+  const hits = R().equipamentos.filter(o => o.id !== id && overlap(o, x, y, w, h));
   if (!hits.length) return {ok:true};
   const t = hits[0];
   if (allowSwap && hits.length === 1 && t.x === x && t.y === y && t.w === w && t.h === h) return {ok:true, swap:t};
@@ -522,7 +597,7 @@ room.addEventListener('mousedown', e => { if (Date.now() - lastTouch < 1000) e.p
 room.addEventListener('pointermove', e => {
   if (gesture || e.pointerType !== 'mouse' || e.target.closest('.eq,[data-edge]')) { hoverEl.style.display = 'none'; return; }
   const c = cellAt(e.clientX, e.clientY);
-  if (c.x < 0 || c.y < 0 || c.x >= S.sala.cols || c.y >= S.sala.rows || occupied(c.x, c.y)) { hoverEl.style.display = 'none'; return; }
+  if (c.x < 0 || c.y < 0 || c.x >= R().cols || c.y >= R().rows || occupied(c.x, c.y)) { hoverEl.style.display = 'none'; return; }
   const s = curS;
   Object.assign(hoverEl.style, {display:'flex', left:c.x * s + 2 + 'px', top:c.y * s + 2 + 'px', width:s - 4 + 'px', height:s - 4 + 'px'});
 });
@@ -533,16 +608,15 @@ function emptyPress(e, panelWasOpen) {
   track(e.pointerId, ev => { if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 8) moved = true; }, (ev, cancelled) => {
     if (cancelled || moved || panelWasOpen) return;
     const c = cellAt(ev.clientX, ev.clientY);
-    if (c.x < 0 || c.y < 0 || c.x >= S.sala.cols || c.y >= S.sala.rows || occupied(c.x, c.y)) return;
+    if (c.x < 0 || c.y < 0 || c.x >= R().cols || c.y >= R().rows || occupied(c.x, c.y)) return;
     criar(c.x, c.y);
   });
 }
 function criar(x, y) {
-  let w = 1, h = 1;
-  for (const [a, b] of [[2, 2], [2, 1], [1, 2]]) if (canPlace(null, x, y, a, b).ok) { w = a; h = b; break; }
   snap();
-  const eq = {id: uid(), codigo:'', descricao:'', calibracao:'', validade:1, anotacao:'', cor:'cinza', x, y, w, h, relogios:[], pnps:[]};
-  S.equipamentos.push(eq);
+  const eq = {id: uid(), codigo:'', descricao:'', calibracao:'', validade:1, anotacao:'', cor:'cinza', x, y, w:1, h:1, relogios:[], pnps:[]};
+  novo = {id: eq.id, len: undoStack.length};
+  R().equipamentos.push(eq);
   changed();
   openPanel(eq.id, true);
 }
@@ -558,8 +632,9 @@ function eqPress(e, id, el) {
   let state = 'press', hold = null, res = null, nx = eq.x, ny = eq.y, moved = false;
   gesture = {lock:false};
   const begin = () => {
-    state = 'drag'; gesture.lock = true; el.classList.add('dragging');
     if (openId) closePanel();
+    if (!find(id)) { state = 'gone'; return; }
+    state = 'drag'; gesture.lock = true; el.classList.add('dragging');
     showGhost(eq.x, eq.y, eq.w, eq.h);
   };
   if (touch) hold = setTimeout(() => { if (state === 'press') { begin(); if (navigator.vibrate) navigator.vibrate(12); } }, 320);
@@ -573,15 +648,15 @@ function eqPress(e, id, el) {
     if (state !== 'drag') return;
     autoScroll(ev);
     const r = room.getBoundingClientRect();
-    nx = clamp(Math.round((ev.clientX - gx - r.left) / s), 0, S.sala.cols - eq.w);
-    ny = clamp(Math.round((ev.clientY - gy - r.top) / s), 0, S.sala.rows - eq.h);
+    nx = clamp(Math.round((ev.clientX - gx - r.left) / s), 0, R().cols - eq.w);
+    ny = clamp(Math.round((ev.clientY - gy - r.top) / s), 0, R().rows - eq.h);
     if (nx !== eq.x || ny !== eq.y) moved = true;
     res = (nx === eq.x && ny === eq.y) ? {ok:true} : canPlace(eq.id, nx, ny, eq.w, eq.h, true);
     showGhost(nx, ny, eq.w, eq.h, res.ok ? (res.swap ? 'swap' : '') : 'bad');
   }, (ev, cancelled) => {
     clearTimeout(hold);
     const st = state; gesture = null; hideGhost(); el.classList.remove('dragging');
-    if (cancelled || st === 'scroll') return;
+    if (cancelled || st === 'scroll' || st === 'gone') return;
     if (st === 'press' || (st === 'drag' && touch && !moved)) { openPanel(id); return; }
     if (st !== 'drag' || !res || !res.ok || (nx === eq.x && ny === eq.y)) return;
     pushRaw(before);
@@ -594,15 +669,17 @@ function eqPress(e, id, el) {
 
 function eqResize(e, id, el) {
   e.preventDefault();
+  if (openId) closePanel();
   const eq = find(id); if (!eq) return;
+  el = layer.querySelector(`[data-id="${CSS.escape(id)}"]`) || el;
   const s = curS, sx = e.clientX, sy = e.clientY, before = JSON.stringify(S);
   let w = eq.w, h = eq.h, blocked = false;
-  gesture = {lock:true}; el.classList.add('dragging'); if (openId) closePanel();
+  gesture = {lock:true}; el.classList.add('dragging');
   showGhost(eq.x, eq.y, w, h);
   track(e.pointerId, ev => {
     autoScroll(ev);
-    const nw = clamp(eq.w + Math.round((ev.clientX - sx) / s), 1, S.sala.cols - eq.x);
-    const nh = clamp(eq.h + Math.round((ev.clientY - sy) / s), 1, S.sala.rows - eq.y);
+    const nw = clamp(eq.w + Math.round((ev.clientX - sx) / s), 1, R().cols - eq.x);
+    const nh = clamp(eq.h + Math.round((ev.clientY - sy) / s), 1, R().rows - eq.y);
     if (canPlace(eq.id, eq.x, eq.y, nw, nh, false).ok) { w = nw; h = nh; blocked = false; showGhost(eq.x, eq.y, w, h); }
     else { blocked = true; showGhost(eq.x, eq.y, nw, nh, 'bad'); }
   }, (ev, cancelled) => {
@@ -615,21 +692,21 @@ function eqResize(e, id, el) {
 function roomResize(e, edgeEl) {
   e.preventDefault();
   const kind = edgeEl.dataset.edge, s = curS, sx = e.clientX, sy = e.clientY, before = JSON.stringify(S);
-  const c0 = S.sala.cols, r0 = S.sala.rows;
-  const minC = Math.max(2, ...S.equipamentos.map(o => o.x + o.w));
-  const minR = Math.max(2, ...S.equipamentos.map(o => o.y + o.h));
+  const c0 = R().cols, r0 = R().rows;
+  const minC = Math.max(2, ...R().equipamentos.map(o => o.x + o.w));
+  const minR = Math.max(2, ...R().equipamentos.map(o => o.y + o.h));
   frozenS = s; gesture = {lock:true}; edgeEl.classList.add('on'); if (openId) closePanel();
   const tag = $('#sizeTag');
-  const show = blocked => { tag.style.display = 'block'; tag.textContent = `${S.sala.cols} × ${S.sala.rows}` + (blocked ? ' · há equipamento na borda' : ''); };
+  const show = blocked => { tag.style.display = 'block'; tag.textContent = `${R().cols} × ${R().rows}` + (blocked ? ' · há equipamento na borda' : ''); };
   show(false);
   track(e.pointerId, ev => {
     let blocked = false;
-    if (kind !== 'b') { const want = c0 + Math.round((ev.clientX - sx) / s); if (want < minC && minC > 2) blocked = true; S.sala.cols = clamp(want, minC, MAX); }
-    if (kind !== 'r') { const want = r0 + Math.round((ev.clientY - sy) / s); if (want < minR && minR > 2) blocked = true; S.sala.rows = clamp(want, minR, MAX); }
+    if (kind !== 'b') { const want = c0 + Math.round((ev.clientX - sx) / s); if (want < minC && minC > 2) blocked = true; R().cols = clamp(want, minC, MAX); }
+    if (kind !== 'r') { const want = r0 + Math.round((ev.clientY - sy) / s); if (want < minR && minR > 2) blocked = true; R().rows = clamp(want, minR, MAX); }
     render(); show(blocked); autoScroll(ev);
   }, () => {
     frozenS = 0; gesture = null; edgeEl.classList.remove('on'); tag.style.display = 'none';
-    if (S.sala.cols !== c0 || S.sala.rows !== r0) { pushRaw(before); save(); }
+    if (R().cols !== c0 || R().rows !== r0) { pushRaw(before); save(); }
     render();
   });
 }
@@ -686,6 +763,7 @@ function buildPanel() {
     </div>
     <label class="f"><span>Anotação</span><textarea data-f="anotacao" rows="3">${esc(eq.anotacao)}</textarea></label>
     <div class="f"><span>Cor</span><div class="cores">${COLORS.map(c => `<button class="sw" data-cor="${c.id}" title="${c.nome}" aria-label="${c.nome}" aria-pressed="${eq.cor === c.id}" style="--fill:${c.fill};--bd:${c.bd}"></button>`).join('')}</div></div>
+    ${S.salas.length > 1 ? `<label class="f"><span>Sala</span><select data-mover>${S.salas.map(x => `<option value="${esc(x.id)}"${x.id === S.atual ? ' selected' : ''}>${esc(x.nome || 'Sem nome')}</option>`).join('')}</select></label>` : ''}
     <button class="danger" data-del>Apagar equipamento</button>`;
   $('#ptitle').textContent = eq.codigo ? `Equipamento ${eq.codigo}` : 'Novo equipamento';
 }
@@ -733,11 +811,21 @@ function openPanel(id, focusCode) {
   placePanel();
   if (focusCode) pbody.querySelector('[data-f="codigo"]').focus({preventScroll:true});
 }
+const vazio = eq => !eq.codigo.trim() && !eq.descricao.trim() && !eq.calibracao && !eq.anotacao.trim() && !eq.relogios.length && !eq.pnps.length;
 function closePanel() {
   if (!openId) return;
   const ae = document.activeElement; if (ae && panel.contains(ae)) ae.blur();
   const id = openId; openId = null; lastKey = null; panel.hidden = true;
   document.body.classList.remove('sheet-open');
+  if (novo && novo.id === id) {
+    // Equipamento recém-criado e deixado em branco: a criação é cancelada.
+    const eq = find(id), n = novo; novo = null;
+    if (eq && vazio(eq)) {
+      R().equipamentos = R().equipamentos.filter(e => e.id !== id);
+      if (undoStack.length === n.len) { undoStack.pop(); updUndo(); }
+      save(); render(); return;
+    }
+  }
   const el = layer.querySelector(`[data-id="${CSS.escape(id)}"]`);
   if (el) { el.classList.remove('sel'); if (!coarse) el.focus({preventScroll:true}); }
 }
@@ -753,6 +841,7 @@ pbody.addEventListener('change', onField);
 function onField(e) {
   const eq = find(openId); if (!eq) return;
   const t = e.target;
+  if (t.hasAttribute('data-mover')) { if (e.type === 'change') moverPara(eq, t.value); return; }
   if (e.type === 'change' && t.tagName !== 'SELECT') return; // texto e datas já tratados em "input"
   if (e.type === 'input' && t.tagName === 'SELECT') return;
   if (t.dataset.f) {
@@ -768,6 +857,25 @@ function onField(e) {
     it[f] = v;
   } else return;
   save(); render(); updStatus();
+}
+function moverPara(eq, salaId) {
+  const dest = S.salas.find(x => x.id === salaId); if (!dest || dest.id === S.atual) return;
+  const livre = (x, y, w, h) => x + w <= dest.cols && y + h <= dest.rows && !dest.equipamentos.some(o => overlap(o, x, y, w, h));
+  let pos = null;
+  for (const [w, h] of [[eq.w, eq.h], [1, 1]]) {
+    for (let y = 0; y < dest.rows && !pos; y++) for (let x = 0; x < dest.cols && !pos; x++) if (livre(x, y, w, h)) pos = {x, y, w, h};
+    if (pos) break;
+  }
+  snap();
+  if (!pos) {
+    if (dest.rows >= MAX) { undoStack.pop(); updUndo(); refreshPanel(); return toast(`A sala ${dest.nome} está cheia.`, {error:true}); }
+    pos = {x:0, y:dest.rows, w:Math.min(eq.w, dest.cols), h:1}; dest.rows++;
+  }
+  novo = null;
+  R().equipamentos = R().equipamentos.filter(o => o.id !== eq.id);
+  Object.assign(eq, pos); dest.equipamentos.push(eq);
+  closePanel(); changed();
+  toast(`${eq.codigo || 'Equipamento'} foi para a sala ${dest.nome}.`, {label:'Desfazer', action:undo});
 }
 pbody.addEventListener('click', e => {
   const eq = find(openId); if (!eq) return;
@@ -791,7 +899,7 @@ pbody.addEventListener('click', e => {
     pbody.querySelectorAll('[data-cor]').forEach(x => x.setAttribute('aria-pressed', x.dataset.cor === eq.cor));
   } else if (b.hasAttribute('data-del')) {
     snap();
-    S.equipamentos = S.equipamentos.filter(x => x.id !== eq.id);
+    R().equipamentos = R().equipamentos.filter(x => x.id !== eq.id);
     closePanel(); changed();
     toast(`Equipamento ${eq.codigo || 'sem código'} apagado`, {label:'Desfazer', action:undo});
   }
@@ -818,9 +926,9 @@ $('#phead').addEventListener('pointerdown', e => {
 /* ====== Cabeçalho: nome, busca, arquivo, impressão ====== */
 const nameEl = $('#roomName');
 nameEl.addEventListener('focusin', () => { lastKey = null; });
-nameEl.addEventListener('input', () => { snap('nome'); S.sala.nome = nameEl.value; save(); document.title = (S.sala.nome || 'Sala') + ' · Sala de Dispositivos'; });
+nameEl.addEventListener('input', () => { snap('nome:' + S.atual); R().nome = nameEl.value; save(); renderTabs(); document.title = (R().nome || 'Sala') + ' · Sala de Dispositivos'; });
 nameEl.addEventListener('keydown', e => { if (e.key === 'Enter') nameEl.blur(); });
-nameEl.addEventListener('blur', () => { if (!S.sala.nome.trim()) { S.sala.nome = 'Sala de dispositivos'; save(); render(); } });
+nameEl.addEventListener('blur', () => { if (!R().nome.trim()) { R().nome = 'Sala de dispositivos'; save(); render(); } });
 
 let qT;
 qEl.addEventListener('input', () => { query = qEl.value; clearTimeout(qT); qT = setTimeout(render, 80); });
@@ -831,10 +939,46 @@ qEl.addEventListener('keydown', e => {
 $('#qclear').addEventListener('click', () => { qEl.value = query = ''; render(); qEl.focus(); });
 $('#summary').addEventListener('click', e => { const b = e.target.closest('[data-q]'); if (!b) return; qEl.value = query = b.dataset.q; render(); });
 
+$('#tabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'bNovaSala') {
+    snap();
+    const x = novaSala(`Sala ${S.salas.length + 1}`);
+    S.salas.push(x); S.atual = x.id; changed();
+    mapEl.scrollTo(0, 0);
+    nameEl.focus(); nameEl.select();
+    toast('Sala criada. Digite o nome dela no topo.');
+    return;
+  }
+  if (b.dataset.sala && b.dataset.sala !== S.atual) {
+    S.atual = b.dataset.sala; save(); render(); mapEl.scrollTo(0, 0);
+  }
+});
+document.querySelector('.sizectl').addEventListener('click', e => {
+  const b = e.target.closest('[data-size]'); if (!b || b.disabled) return;
+  const r = R(), k = b.dataset.size;
+  if (k === 'c+' && r.cols < MAX) { snap(); r.cols++; }
+  else if (k === 'r+' && r.rows < MAX) { snap(); r.rows++; }
+  else if (k === 'c-' && r.cols > 2) {
+    if (r.equipamentos.some(o => o.x + o.w >= r.cols)) return toast('A última coluna tem equipamento. Mova-o antes de remover a coluna.', {error:true});
+    snap(); r.cols--;
+  } else if (k === 'r-' && r.rows > 2) {
+    if (r.equipamentos.some(o => o.y + o.h >= r.rows)) return toast('A última linha tem equipamento. Mova-o antes de remover a linha.', {error:true});
+    snap(); r.rows--;
+  } else return;
+  changed();
+});
+$('#bDelSala').addEventListener('click', () => {
+  if (S.salas.length === 1) return toast('Esta é a única sala. Crie outra antes de apagar esta.', {error:true});
+  const r = R(), i = S.salas.indexOf(r), n = r.equipamentos.length;
+  snap();
+  S.salas.splice(i, 1); S.atual = S.salas[Math.max(0, i - 1)].id; changed();
+  toast(`Sala ${r.nome} apagada${n ? ` com ${n} ${n === 1 ? 'equipamento' : 'equipamentos'}` : ''}.`, {label:'Desfazer', action:undo});
+});
 $('#bUndo').addEventListener('click', undo);
 $('#bSave').addEventListener('click', () => {
   const d = new Date(), stamp = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
-  const slug = norm(S.sala.nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'sala';
+  const slug = 'salas-de-dispositivos';
   const nome = `${slug}-${stamp}.json`;
   const json = JSON.stringify({app:'sala-dispositivos', salvoEm:d.toISOString(), ...S}, null, 2);
   if (downloadsP) { // Página publicada no claude.ai: o download passa pelo próprio claude.ai.
@@ -860,14 +1004,14 @@ $('#file').addEventListener('change', async e => {
   try { data = normalize(data); }
   catch (err) { toast(`Arquivo recusado: ${err.message} O mapa atual não foi alterado.`, {error:true}); return; }
   closePanel(); snap(); S = data; changed();
-  const n = S.equipamentos.length;
-  toast(`Cópia aberta: ${n} ${n === 1 ? 'equipamento' : 'equipamentos'}.`, {label:'Desfazer', action:undo});
+  const ns = S.salas.length, n = S.salas.reduce((a, x) => a + x.equipamentos.length, 0);
+  toast(`Cópia aberta: ${ns} ${ns === 1 ? 'sala' : 'salas'}, ${n} ${n === 1 ? 'equipamento' : 'equipamentos'}.`, {label:'Desfazer', action:undo});
 });
 
 function preparePrint() {
-  const {cols, rows} = S.sala;
+  const {cols, rows} = R();
   printS = clamp(Math.floor(Math.min(1030 / cols, 640 / rows)), 8, 64);
-  $('#phName').textContent = S.sala.nome;
+  $('#phName').textContent = R().nome;
   $('#phInfo').textContent = `Impresso em ${fmt(hoje())} · Laranja: vence em até ${AVISO_DIAS} dias · Vermelho: vencido`;
   render();
 }
