@@ -397,7 +397,7 @@ body.modo-sel #map{padding-bottom:150px}
   #printhead{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 6px;font-size:12px}
   #printhead h1{font-size:16px;margin:0}
   #map{overflow:visible;padding:0}
-  #room{margin:0;box-shadow:none}
+  #room{margin:0;box-shadow:none;background-image:none!important;border-color:#bec5bd}
   .eq,.eq .band,.w,.flag,#room{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .eq{box-shadow:none!important;opacity:1!important}
 }
@@ -1871,19 +1871,30 @@ function pdfDoc(jspdf) {
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(90, 100, 95);
   doc.text(`Impresso em ${fmt(hoje())} · Verde: em dia · Amarelo: vence em até ${AVISO_DIAS} dias · Vermelho: vencido · Cinza: sem data`, W - M, M + 5, {align:'right'});
   const top = M + 10, c = Math.min((W - 2 * M) / sala.cols, (H - top - M) / sala.rows);
-  doc.setDrawColor(227, 231, 225); doc.setLineWidth(0.15);
-  for (let i = 1; i < sala.cols; i++) doc.line(M + i * c, top, M + i * c, top + sala.rows * c);
-  for (let i = 1; i < sala.rows; i++) doc.line(M, top + i * c, M + sala.cols * c, top + i * c);
+  // Sem grade na impressão: só o contorno da sala.
   doc.setDrawColor(190, 197, 189); doc.setLineWidth(0.3); doc.rect(M, top, sala.cols * c, sala.rows * c);
+  // Faixa com o código em uma linha, letra ajustada à largura (como na tela).
+  // Mesma regra da tela: objeto estreito (1 espaço) vira um bloco inteiro colorido com o código no centro.
+  const faixa = (texto, x, y, w, h, col, larguraCasas) => {
+    const mini = larguraCasas * curS < 64 || w < 9 || h < 6;
+    const bh = mini ? h : Math.min(h, Math.max(c * 0.42, 4));
+    doc.setFillColor(...rgb(col.band));
+    if (mini) doc.roundedRect(x, y, w, h, 1, 1, 'F'); else doc.rect(x + 0.25, y + 0.25, w - 0.5, bh - 0.25, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+    const largura = w - (mini ? 1.2 : 2.4), w10 = doc.getTextWidth(texto || ' ') || 1;
+    const pt = clamp(10 * largura / w10 * 0.95, 3, Math.min(16, bh * 2.835 * (mini ? 0.42 : 0.7)));
+    doc.setFontSize(pt); doc.setTextColor(...rgb(col.ink));
+    const alturaTexto = pt / 2.835;
+    if (mini) doc.text(texto, x + w / 2, y + h / 2 + alturaTexto * 0.35, {align:'center'});
+    else doc.text(texto, x + 1.2, y + bh / 2 + alturaTexto * 0.35);
+    return mini ? h : bh;
+  };
   const fs = clamp(c * 1.15, 4.5, 9), lh = fs * 0.3528 * 1.3;
   for (const eq of (isGeral() ? [] : sala.equipamentos)) {
     const col = STATUS_COR[statusEq(eq)], x = M + eq.x * c + 0.5, y = top + eq.y * c + 0.5, w = eq.w * c - 1, h = eq.h * c - 1;
     doc.setFillColor(...rgb(col.fill)); doc.setDrawColor(...rgb(col.bd)); doc.setLineWidth(0.5);
     doc.roundedRect(x, y, w, h, 1, 1, 'FD');
-    const bh = Math.min(h, lh * 1.35);
-    doc.setFillColor(...rgb(col.band)); doc.rect(x + 0.25, y + 0.25, w - 0.5, bh - 0.25, 'F');
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(fs * 1.1); doc.setTextColor(...rgb(col.ink));
-    doc.text(cortar(doc, eq.codigo || 'sem código', w - 2), x + 1, y + bh * 0.72);
+    const bh = faixa(eq.codigo || 'sem código', x, y, w, h, col, eq.w);
     const tw = w - 2, top1 = avisos(eq)[0];
     let ly = y + bh + lh * 0.8, left = Math.max(0, Math.floor((h - bh - 1) / lh));
     const linha = (txt, bold, cor) => { if (left <= 0) return; doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setFontSize(fs); doc.setTextColor(...cor); doc.text(cortar(doc, txt, tw), x + 1, ly); ly += lh; left--; };
@@ -1901,9 +1912,7 @@ function pdfDoc(jspdf) {
       const x0 = S.salas.find(z => z.id === b.id); if (!x0) continue;
       const col = STATUS_COR[statusSala(x0)], e = estadoSala(x0, ''), x = M + b.x * c + 0.5, y = top + b.y * c + 0.5, w = b.w * c - 1, h = b.h * c - 1;
       doc.setFillColor(...rgb(col.fill)); doc.setDrawColor(...rgb(col.bd)); doc.setLineWidth(0.5); doc.roundedRect(x, y, w, h, 1, 1, 'FD');
-      const bh = Math.min(h, lh * 1.35);
-      doc.setFillColor(...rgb(col.band)); doc.rect(x + 0.25, y + 0.25, w - 0.5, bh - 0.25, 'F');
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(fs * 1.1); doc.setTextColor(...rgb(col.ink)); doc.text(cortar(doc, x0.nome, w - 2), x + 1, y + bh * 0.72);
+      const bh = faixa(x0.nome, x, y, w, h, col, b.w);
       let ly = y + bh + lh * 0.8, left = Math.max(0, Math.floor((h - bh - 1) / lh));
       for (const [t, cor] of [[`${x0.equipamentos.length} ${x0.equipamentos.length === 1 ? 'equipamento' : 'equipamentos'}`, [54, 64, 59]], [e.late ? `${e.late} ${e.late === 1 ? 'vencido' : 'vencidos'}` : '', [194, 39, 39]], [e.soon ? `${e.soon} a vencer` : '', [120, 90, 0]]]) {
         if (!t || left <= 0) continue; doc.setFont('helvetica', 'normal'); doc.setFontSize(fs); doc.setTextColor(...cor); doc.text(cortar(doc, t, w - 2), x + 1, ly); ly += lh; left--;
